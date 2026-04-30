@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { verifyTicket } from '../services/api';
 import toast from 'react-hot-toast';
+import BackButton from './BackButton';
 
 const QRScanner = () => {
   const [ticketCode, setTicketCode] = useState('');
@@ -34,7 +35,8 @@ const QRScanner = () => {
 
   return (
     <div style={{ maxWidth: '600px', margin: '40px auto', padding: '20px' }}>
-      <div style={{ background: 'white', borderRadius: '16px', padding: '32px' }}>
+      <BackButton />
+      <div style={{ background: 'white', borderRadius: '16px', padding: '32px', marginTop: '20px' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '24px' }}>🎟️ Ticket Verification</h2>
         
         <div className="form-group">
@@ -77,6 +79,7 @@ const QRScanner = () => {
               {verificationResult.valid && (
                 <div style={{ marginTop: '16px', textAlign: 'left' }}>
                   <p><strong>Event:</strong> {verificationResult.event_title}</p>
+                  <p><strong>Verified By:</strong> {verificationResult.verified_by}</p>
                   <p><strong>Ticket Code:</strong> {ticketCode}</p>
                 </div>
               )}

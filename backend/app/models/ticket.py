@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.sql import func
-from app.database.session import Base
+from app.database.session import Base  # Import from session
 
 class Ticket(Base):
     __tablename__ = "tickets"

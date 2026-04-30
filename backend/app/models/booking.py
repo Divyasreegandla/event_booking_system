@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Floa
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import enum
-from app.database.session import Base
+from app.database.session import Base  # Import from session
 
 class BookingStatus(str, enum.Enum):
     PENDING = "pending"
@@ -22,5 +22,5 @@ class Booking(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     booking_date = Column(DateTime(timezone=True), server_default=func.now())
     
-    user = relationship("User")
-    event = relationship("Event")
+    user = relationship("User", foreign_keys=[user_id])
+    event = relationship("Event", foreign_keys=[event_id])

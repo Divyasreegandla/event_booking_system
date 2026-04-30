@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getEvent } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import BackButton from '../components/BackButton';
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -28,10 +29,6 @@ const EventDetails = () => {
     }
   };
 
-  const goBack = () => {
-    navigate(-1);
-  };
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -52,6 +49,15 @@ const EventDetails = () => {
     navigate(`/booking/${id}`, { state: { event, quantity } });
   };
 
+  const getStatusColor = () => {
+    const status = event?.event_status;
+    if (status === 'UPCOMING') return '#10b981';
+    if (status === 'ONGOING') return '#f59e0b';
+    if (status === 'COMPLETED') return '#6b7280';
+    if (status === 'CANCELLED') return '#ef4444';
+    return '#6b7280';
+  };
+
   const defaultImage = "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&h=400&fit=crop";
   const eventImage = event?.image_url || defaultImage;
 
@@ -67,20 +73,29 @@ const EventDetails = () => {
 
   return (
     <div className="event-detail-container">
-      <button onClick={goBack} className="back-button">← Back to Events</button>
+      <BackButton />
       
       <div className="event-detail-card">
-        <div 
-          className="event-detail-header" 
-          style={{ backgroundImage: `url(${eventImage})` }}
-        >
+        <div className="event-detail-header" style={{ backgroundImage: `url(${eventImage})` }}>
           <div className="event-detail-overlay">
             <span className="event-category-large">{event.category}</span>
           </div>
         </div>
         
         <div className="event-detail-content">
-          <h1 className="event-detail-title">{event.title}</h1>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1 className="event-detail-title">{event.title}</h1>
+            <span style={{ 
+              background: getStatusColor(), 
+              color: 'white', 
+              padding: '4px 12px', 
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}>
+              {event.event_status}
+            </span>
+          </div>
           
           <div className="event-info-grid">
             <div className="event-info-item">
@@ -99,6 +114,10 @@ const EventDetails = () => {
               <span className="event-info-label">🎟️ Available Tickets</span>
               <span className="event-info-value"><strong>{event.available_tickets}</strong> / {event.total_tickets}</span>
             </div>
+            <div className="event-info-item">
+              <span className="event-info-label">👤 Organized by</span>
+              <span className="event-info-value">{event.organizer_name || 'SmartEvent'}</span>
+            </div>
           </div>
           
           <div className="event-description-section">
@@ -106,7 +125,7 @@ const EventDetails = () => {
             <p>{event.description}</p>
           </div>
           
-          {event.available_tickets > 0 ? (
+          {event.event_status === 'UPCOMING' && event.available_tickets > 0 ? (
             <div className="booking-section">
               <div className="price-box">
                 <span className="price-label">Ticket Price</span>
@@ -131,6 +150,12 @@ const EventDetails = () => {
                   Book Now →
                 </button>
               </div>
+            </div>
+          ) : event.event_status === 'CANCELLED' ? (
+            <div className="sold-out-card" style={{ background: '#fee2e2' }}>
+              <span>🚫</span>
+              <h3>Event Cancelled</h3>
+              <p>This event has been cancelled. Please contact support for refunds.</p>
             </div>
           ) : (
             <div className="sold-out-card">

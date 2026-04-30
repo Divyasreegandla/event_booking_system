@@ -1,3 +1,4 @@
+// frontend/src/components/Navbar.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -5,10 +6,12 @@ import { getUnreadCount } from '../services/api';
 import NotificationDropdown from './NotificationDropdown';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, userRole, logout, isAdmin, isOrganizer } = useAuth();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -29,89 +32,316 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
+    navigate('/login');
+  };
+
+  const getRoleBadgeColor = () => {
+    if (isAdmin()) return '#dc2626';
+    if (isOrganizer()) return '#f59e0b';
+    return '#10b981';
   };
 
   return (
-    <nav style={{ 
-      background: 'white', 
-      padding: '0 20px', 
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 1000
-    }}>
-      <div style={{ 
-        maxWidth: '1200px', 
-        margin: '0 auto', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        height: '64px'
-      }}>
-        <Link to="/" style={{ fontSize: '24px', fontWeight: 'bold', color: '#2563eb', textDecoration: 'none' }}>
-          🎫 SmartEvent
-        </Link>
+    <nav className="navbar">
+      <div className="navbar-content">
+        <Link to="/" className="logo">🎫 SmartEvent</Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <Link to="/" style={{ textDecoration: 'none', color: '#4b5563' }}>Home</Link>
-          <Link to="/contact" style={{ textDecoration: 'none', color: '#4b5563' }}>Support</Link>
+        <button className="mobile-menu-btn" onClick={() => setShowMobileMenu(!showMobileMenu)}>
+          ☰
+        </button>
+
+        <div className={`nav-links ${showMobileMenu ? 'active' : ''}`}>
+          <Link to="/" onClick={() => setShowMobileMenu(false)}>Home</Link>
+          <Link to="/contact" onClick={() => setShowMobileMenu(false)}>Support</Link>
           
           {user ? (
             <>
-              <Link to="/bookings" style={{ textDecoration: 'none', color: '#4b5563' }}>My Bookings</Link>
-              <Link to="/tickets" style={{ textDecoration: 'none', color: '#4b5563' }}>My Tickets</Link>
+              <Link to="/bookings" onClick={() => setShowMobileMenu(false)}>My Bookings</Link>
+              <Link to="/tickets" onClick={() => setShowMobileMenu(false)}>My Tickets</Link>
+              
+              {/* Organizer Dropdown - Fixed */}
+              {(isOrganizer() || isAdmin()) && (
+                <div 
+                  className="dropdown"
+                  onMouseEnter={() => setOpenDropdown('organizer')}
+                  onMouseLeave={() => setOpenDropdown(null)}
+                >
+                  <button className="dropdown-btn">🎪 Organizer ▼</button>
+                  <div className={`dropdown-content ${openDropdown === 'organizer' ? 'show' : ''}`}>
+                    <Link to="/organizer/events" onClick={() => setShowMobileMenu(false)}>My Events</Link>
+                    <Link to="/organizer/create-event" onClick={() => setShowMobileMenu(false)}>Create Event</Link>
+                    <Link to="/organizer/dashboard" onClick={() => setShowMobileMenu(false)}>Analytics</Link>
+                  </div>
+                </div>
+              )}
+              
+              {/* Admin Dropdown - Fixed */}
+              {isAdmin() && (
+                <div 
+                  className="dropdown"
+                  onMouseEnter={() => setOpenDropdown('admin')}
+                  onMouseLeave={() => setOpenDropdown(null)}
+                >
+                  <button className="dropdown-btn">👑 Admin ▼</button>
+                  <div className={`dropdown-content ${openDropdown === 'admin' ? 'show' : ''}`}>
+                    <Link to="/admin/dashboard" onClick={() => setShowMobileMenu(false)}>Dashboard</Link>
+                    <Link to="/admin/users" onClick={() => setShowMobileMenu(false)}>Users</Link>
+                    <Link to="/admin/events" onClick={() => setShowMobileMenu(false)}>All Events</Link>
+                    <Link to="/admin/bookings" onClick={() => setShowMobileMenu(false)}>All Bookings</Link>
+                    <Link to="/admin/analytics" onClick={() => setShowMobileMenu(false)}>Analytics</Link>
+                    <Link to="/admin/scan" onClick={() => setShowMobileMenu(false)}>🎟️ Verify Ticket</Link>
+                  </div>
+                </div>
+              )}
               
               {/* Notification Bell */}
-              <div style={{ position: 'relative' }}>
+              <div className="notification-container">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
-                  style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', position: 'relative' }}
+                  className="notification-bell"
                 >
                   🔔
                   {unreadCount > 0 && (
-                    <span style={{ 
-                      position: 'absolute', 
-                      top: '-8px', 
-                      right: '-8px', 
-                      background: '#ef4444', 
-                      color: 'white', 
-                      fontSize: '10px', 
-                      padding: '2px 6px', 
-                      borderRadius: '10px' 
-                    }}>
-                      {unreadCount}
-                    </span>
+                    <span className="notification-badge">{unreadCount}</span>
                   )}
                 </button>
                 {showNotifications && <NotificationDropdown onClose={() => setShowNotifications(false)} />}
               </div>
 
-              {/* User Info and Logout Button */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <span style={{ color: '#4b5563' }}>👤 {user.username}</span>
-                <button
-                  onClick={handleLogout}
-                  style={{ 
-                    padding: '6px 16px', 
-                    background: '#dc2626', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '8px', 
-                    cursor: 'pointer' 
-                  }}
-                >
-                  Logout
-                </button>
+              {/* User Menu */}
+              <div className="user-menu">
+                <div className="user-info">
+                  <span className="user-avatar">👤</span>
+                  <span className="user-name">{user.username}</span>
+                  <span className="role-badge" style={{ 
+                    background: getRoleBadgeColor(),
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    marginLeft: '8px'
+                  }}>
+                    {userRole}
+                  </span>
+                </div>
+                <div className="dropdown-menu-user">
+                  <button onClick={handleLogout} className="logout-btn">
+                    🚪 Logout
+                  </button>
+                </div>
               </div>
             </>
           ) : (
             <>
-              <Link to="/login" style={{ textDecoration: 'none', color: '#4b5563' }}>Login</Link>
-              <Link to="/register" style={{ padding: '8px 20px', background: '#2563eb', color: 'white', textDecoration: 'none', borderRadius: '8px' }}>Sign Up</Link>
+              <Link to="/login" className="nav-link">Login</Link>
+              <Link to="/register" className="btn-primary">Sign Up</Link>
             </>
           )}
         </div>
       </div>
+
+      <style>{`
+        .mobile-menu-btn {
+          display: none;
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+        }
+        
+        /* Dropdown Styles - Fixed */
+        .dropdown {
+          position: relative;
+          display: inline-block;
+        }
+        
+        .dropdown-btn {
+          background: none;
+          border: none;
+          font-size: 16px;
+          cursor: pointer;
+          color: #4a5568;
+          font-weight: 500;
+          padding: 8px 0;
+          transition: color 0.2s;
+        }
+        
+        .dropdown-btn:hover {
+          color: #6366f1;
+        }
+        
+        .dropdown-content {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          background: white;
+          min-width: 200px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+          border-radius: 8px;
+          z-index: 1000;
+          overflow: hidden;
+          margin-top: 8px;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(-10px);
+          transition: all 0.2s ease;
+          border: 1px solid #eef2ff;
+        }
+        
+        .dropdown-content.show {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
+        
+        .dropdown-content a {
+          display: block;
+          padding: 12px 16px;
+          text-decoration: none;
+          color: #1f2937;
+          font-size: 14px;
+          transition: background 0.2s;
+        }
+        
+        .dropdown-content a:hover {
+          background: #f8fafc;
+          color: #6366f1;
+        }
+        
+        /* User Menu Styles */
+        .user-menu {
+          position: relative;
+          cursor: pointer;
+        }
+        
+        .user-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          border-radius: 40px;
+          background: #f3f4f6;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        
+        .user-info:hover {
+          background: #e5e7eb;
+        }
+        
+        .user-avatar {
+          font-size: 18px;
+        }
+        
+        .user-name {
+          font-weight: 500;
+          font-size: 14px;
+          color: #1f2937;
+        }
+        
+        .dropdown-menu-user {
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 8px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+          min-width: 150px;
+          z-index: 1000;
+          overflow: hidden;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(-10px);
+          transition: all 0.2s ease;
+          border: 1px solid #eef2ff;
+        }
+        
+        .user-menu:hover .dropdown-menu-user {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+        }
+        
+        .logout-btn {
+          width: 100%;
+          padding: 12px 16px;
+          background: none;
+          border: none;
+          text-align: left;
+          cursor: pointer;
+          font-size: 14px;
+          color: #dc2626;
+          transition: background 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .logout-btn:hover {
+          background: #fef2f2;
+        }
+        
+        @media (max-width: 768px) {
+          .mobile-menu-btn {
+            display: block;
+          }
+          .nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            padding: 1rem 0;
+            position: absolute;
+            top: 70px;
+            left: 0;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          }
+          .nav-links.active {
+            display: flex;
+          }
+          .dropdown {
+            width: 100%;
+          }
+          .dropdown-content {
+            position: static;
+            box-shadow: none;
+            padding-left: 1rem;
+            margin-top: 0;
+            opacity: 1;
+            visibility: visible;
+            transform: none;
+            display: none;
+          }
+          .dropdown:hover .dropdown-content {
+            display: block;
+          }
+          .dropdown-btn {
+            width: 100%;
+            text-align: left;
+            padding: 8px 0;
+          }
+          .user-menu {
+            width: 100%;
+          }
+          .user-info {
+            justify-content: space-between;
+            width: 100%;
+          }
+          .dropdown-menu-user {
+            position: static;
+            box-shadow: none;
+            margin-top: 0;
+            padding-left: 1rem;
+            opacity: 1;
+            visibility: visible;
+            transform: none;
+            display: none;
+          }
+          .user-menu:hover .dropdown-menu-user {
+            display: block;
+          }
+        }
+      `}</style>
     </nav>
   );
 };

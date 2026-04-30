@@ -1,3 +1,4 @@
+// frontend/src/pages/Tickets.jsx
 import React, { useState, useEffect } from 'react';
 import { getMyTickets } from '../services/api';
 import toast from 'react-hot-toast';
@@ -6,12 +7,10 @@ import BackButton from '../components/BackButton';
 const Tickets = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('active'); // 'active', 'cancelled', 'all'
+  const [filter, setFilter] = useState('active');
 
   useEffect(() => {
     fetchTickets();
-    
-    // Listen for booking cancellation events
     window.addEventListener('bookingCancelled', fetchTickets);
     return () => window.removeEventListener('bookingCancelled', fetchTickets);
   }, []);
@@ -20,11 +19,20 @@ const Tickets = () => {
     try {
       setLoading(true);
       const response = await getMyTickets();
-      console.log('Tickets response:', response.data);
-      setTickets(response.data.tickets || []);
+      console.log('Tickets API Response:', response.data);
+      
+      let ticketsData = [];
+      if (response.data && response.data.tickets) {
+        ticketsData = response.data.tickets;
+      } else if (Array.isArray(response.data)) {
+        ticketsData = response.data;
+      }
+      
+      setTickets(ticketsData);
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
       toast.error('Failed to load tickets');
+      setTickets([]);
     } finally {
       setLoading(false);
     }
@@ -44,16 +52,19 @@ const Tickets = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Date TBA';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
-  // Filter tickets based on selection
   const getFilteredTickets = () => {
     if (filter === 'active') {
       return tickets.filter(t => !t.is_cancelled);
@@ -70,7 +81,7 @@ const Tickets = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+      <div className="spinner-container">
         <div className="spinner"></div>
       </div>
     );
@@ -81,7 +92,6 @@ const Tickets = () => {
       <BackButton />
       <h1 style={{ fontSize: '28px', marginBottom: '24px' }}>My Tickets</h1>
 
-      {/* Filter Tabs */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
         <button
           onClick={() => setFilter('active')}
@@ -135,11 +145,6 @@ const Tickets = () => {
             {filter === 'cancelled' && 'No cancelled tickets.'}
             {filter === 'all' && 'No tickets yet.'}
           </p>
-          <p style={{ color: '#6b7280', marginTop: '8px' }}>
-            {filter === 'active' && 'Book events to get your digital tickets here!'}
-            {filter === 'cancelled' && 'Cancelled bookings will appear here.'}
-            {filter === 'all' && 'Book events to get your digital tickets here!'}
-          </p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
@@ -156,7 +161,6 @@ const Tickets = () => {
                 border: ticket.is_cancelled ? '1px solid #fecaca' : 'none'
               }}
             >
-              {/* Cancelled Badge */}
               {ticket.is_cancelled && (
                 <div style={{
                   position: 'absolute',
@@ -188,7 +192,7 @@ const Tickets = () => {
               </h3>
               
               <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', marginBottom: '4px' }}>
-                {ticket.venue}
+                {ticket.venue || 'Venue TBA'}
               </p>
               <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', marginBottom: '12px' }}>
                 {formatDate(ticket.event_date)}
@@ -207,7 +211,8 @@ const Tickets = () => {
                       <img 
                         src={ticket.qr_code} 
                         alt="QR Code" 
-                        style={{ width: '150px', height: '150px', margin: '0 auto' }}
+                        style={{ width: '150px', height: '150px', margin: '0 auto', cursor: 'pointer' }}
+                        onClick={() => downloadTicket(ticket)}
                       />
                     ) : (
                       <div style={{ 
@@ -224,10 +229,7 @@ const Tickets = () => {
                       </div>
                     )}
                   </div>
-                  <button
-                    onClick={() => downloadTicket(ticket)}
-                    style={{ width: '100%', padding: '10px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                  >
+                  <button onClick={() => downloadTicket(ticket)} className="btn-primary" style={{ width: '100%' }}>
                     Download Ticket
                   </button>
                 </>

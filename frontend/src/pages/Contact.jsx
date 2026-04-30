@@ -21,7 +21,6 @@ const Contact = () => {
     e.preventDefault();
     setSending(true);
     
-    // Simulate sending message (you can connect to actual email API later)
     setTimeout(() => {
       toast.success('Message sent successfully! We will get back to you soon.');
       setFormData({ name: '', email: '', message: '' });
@@ -30,29 +29,29 @@ const Contact = () => {
   };
 
   return (
-    <div className="contact-page">
-         <BackButton />
-      <div className="contact-card">
+    <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 20px' }}>
+      <BackButton />
+      <div style={{ background: 'white', borderRadius: '2rem', padding: '2rem', boxShadow: '0 20px 35px -10px rgba(0,0,0,0.05)', border: '1px solid #eef2ff', marginTop: '20px' }}>
         <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>Get in Touch</h1>
         <p style={{ color: '#4a5568', marginBottom: '2rem' }}>
           Have questions about an event or need help with a booking? We're here for you.
         </p>
 
-        <div className="contact-info-grid">
-          <div className="contact-method">
-            <div className="icon">📧</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', margin: '2rem 0' }}>
+          <div style={{ textAlign: 'center', padding: '1rem' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📧</div>
             <h4>Email Support</h4>
             <p>support@smartevent.com</p>
             <small>We reply within 24h</small>
           </div>
-          <div className="contact-method">
-            <div className="icon">📞</div>
+          <div style={{ textAlign: 'center', padding: '1rem' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📞</div>
             <h4>Phone</h4>
             <p>+91 98765 43210</p>
             <small>Mon-Sat, 10 AM - 7 PM</small>
           </div>
-          <div className="contact-method">
-            <div className="icon">💬</div>
+          <div style={{ textAlign: 'center', padding: '1rem' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💬</div>
             <h4>WhatsApp</h4>
             <p>+91 98765 43210</p>
             <small>Chat with us</small>
@@ -62,40 +61,10 @@ const Contact = () => {
         <form onSubmit={handleSubmit} style={{ marginTop: '2rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Send us a message</h3>
           <div style={{ display: 'grid', gap: '1rem' }}>
-            <input
-              type="text"
-              name="name"
-              placeholder="Your Name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="input-field"
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Email Address"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="input-field"
-            />
-            <textarea
-              name="message"
-              rows="4"
-              placeholder="How can we help you?"
-              value={formData.message}
-              onChange={handleChange}
-              required
-              className="input-field"
-              style={{ resize: 'vertical' }}
-            ></textarea>
-            <button 
-              type="submit" 
-              disabled={sending} 
-              className="btn-primary" 
-              style={{ width: 'fit-content' }}
-            >
+            <input type="text" name="name" placeholder="Your Name" value={formData.name} onChange={handleChange} required className="input-field" />
+            <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className="input-field" />
+            <textarea name="message" rows="4" placeholder="How can we help you?" value={formData.message} onChange={handleChange} required className="input-field" style={{ resize: 'vertical' }} />
+            <button type="submit" disabled={sending} className="btn-primary" style={{ width: 'fit-content' }}>
               {sending ? 'Sending...' : 'Send Message'}
             </button>
           </div>

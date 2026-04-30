@@ -1,14 +1,59 @@
 from app.database.session import SessionLocal
-from app.models.event import Event
+from app.models.event import Event, EventStatus
+from app.models.user import User, UserRole
+from app.models.booking import Booking
+from app.models.ticket import Ticket
+from app.models.notification import Notification
+from app.utils.security import get_password_hash
 from datetime import datetime, timedelta
 
 db = SessionLocal()
 
-# Clear existing events
-db.query(Event).delete()
+# First, ensure we have an organizer
+organizer = db.query(User).filter(User.role == UserRole.ORGANIZER).first()
+
+if not organizer:
+    print("No organizer found. Creating organizer...")
+    organizer = User(
+        email="organizer@smartevent.com",
+        username="organizer",
+        hashed_password=get_password_hash("organizer123"),
+        role=UserRole.ORGANIZER,
+        is_admin=False
+    )
+    db.add(organizer)
+    db.commit()
+    db.refresh(organizer)
+    print(f"✅ Created organizer: {organizer.email} / organizer123")
+else:
+    print(f"✅ Using existing organizer: {organizer.email}")
 
 # ============================================
-# MUSIC EVENTS (7 events) - UNIQUE WORKING IMAGES
+# IMPORTANT: Delete dependent records first
+# ============================================
+print("Clearing existing data in correct order...")
+
+# 1. Delete tickets first (they depend on bookings)
+tickets_deleted = db.query(Ticket).delete()
+print(f"   Deleted {tickets_deleted} tickets")
+
+# 2. Delete notifications (they may reference bookings/events)
+notifications_deleted = db.query(Notification).delete()
+print(f"   Deleted {notifications_deleted} notifications")
+
+# 3. Delete bookings (they depend on events)
+bookings_deleted = db.query(Booking).delete()
+print(f"   Deleted {bookings_deleted} bookings")
+
+# 4. Now delete events
+events_deleted = db.query(Event).delete()
+print(f"   Deleted {events_deleted} events")
+
+db.commit()
+print("✅ All existing data cleared successfully!")
+
+# ============================================
+# MUSIC EVENTS (7 events)
 # ============================================
 music_events = [
     Event(
@@ -21,7 +66,9 @@ music_events = [
         price=2499,
         total_tickets=25000,
         available_tickets=25000,
-        image_url="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1105666/pexels-photo-1105666.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎸 A R Rahman Live in Concert",
@@ -33,7 +80,9 @@ music_events = [
         price=3999,
         total_tickets=15000,
         available_tickets=15000,
-        image_url="https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎤 Sunburn Music Festival Goa 2026",
@@ -45,7 +94,9 @@ music_events = [
         price=5999,
         total_tickets=50000,
         available_tickets=50000,
-        image_url="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎸 NH7 Weekender - Pune Edition",
@@ -57,7 +108,9 @@ music_events = [
         price=3499,
         total_tickets=20000,
         available_tickets=20000,
-        image_url="https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1540406/pexels-photo-1540406.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎷 Zakir Hussain - Masters of Percussion",
@@ -69,7 +122,9 @@ music_events = [
         price=4999,
         total_tickets=5000,
         available_tickets=5000,
-        image_url="https://images.pexels.com/photos/995301/pexels-photo-995301.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/995301/pexels-photo-995301.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎤 Badshah Live - Paagal Tour",
@@ -81,7 +136,9 @@ music_events = [
         price=2999,
         total_tickets=20000,
         available_tickets=20000,
-        image_url="https://images.pexels.com/photos/1387069/pexels-photo-1387069.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1387069/pexels-photo-1387069.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎸 Zomaland - Food & Music Festival",
@@ -93,12 +150,14 @@ music_events = [
         price=2499,
         total_tickets=30000,
         available_tickets=30000,
-        image_url="https://images.pexels.com/photos/2608517/pexels-photo-2608517.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/2608517/pexels-photo-2608517.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
 ]
 
 # ============================================
-# COMEDY EVENTS (6 events) - FIXED WORKING IMAGES
+# COMEDY EVENTS (6 events)
 # ============================================
 comedy_events = [
     Event(
@@ -111,7 +170,9 @@ comedy_events = [
         price=1999,
         total_tickets=8000,
         available_tickets=8000,
-        image_url="https://images.pexels.com/photos/2914066/pexels-photo-2914066.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/2914066/pexels-photo-2914066.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎭 Kapil Sharma Live - Comedy Night",
@@ -123,7 +184,9 @@ comedy_events = [
         price=3999,
         total_tickets=10000,
         available_tickets=10000,
-        image_url="https://images.pexels.com/photos/958445/pexels-photo-958445.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/958445/pexels-photo-958445.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎤 Biswa Kalyan Rath - Live",
@@ -135,7 +198,9 @@ comedy_events = [
         price=1499,
         total_tickets=5000,
         available_tickets=5000,
-        image_url="https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="😂 Kenny Sebastian - The Most Interesting Person",
@@ -147,7 +212,9 @@ comedy_events = [
         price=1799,
         total_tickets=6000,
         available_tickets=6000,
-        image_url="https://images.pexels.com/photos/7788570/pexels-photo-7788570.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/7788570/pexels-photo-7788570.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎭 Akiv Ali - Stand Up Special",
@@ -159,7 +226,9 @@ comedy_events = [
         price=1299,
         total_tickets=3000,
         available_tickets=3000,
-        image_url="https://images.pexels.com/photos/2589653/pexels-photo-2589653.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/2589653/pexels-photo-2589653.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="😂 Vir Das - Mind Fool Tour",
@@ -171,12 +240,14 @@ comedy_events = [
         price=3999,
         total_tickets=12000,
         available_tickets=12000,
-        image_url="https://images.pexels.com/photos/1045553/pexels-photo-1045553.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1045553/pexels-photo-1045553.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
 ]
 
 # ============================================
-# TECH EVENTS (6 events) - WORKING IMAGES
+# TECH EVENTS (6 events)
 # ============================================
 tech_events = [
     Event(
@@ -189,7 +260,9 @@ tech_events = [
         price=4999,
         total_tickets=10000,
         available_tickets=10000,
-        image_url="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="💻 AWS Cloud Summit India",
@@ -201,7 +274,9 @@ tech_events = [
         price=2999,
         total_tickets=5000,
         available_tickets=5000,
-        image_url="https://images.pexels.com/photos/4050285/pexels-photo-4050285.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/4050285/pexels-photo-4050285.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🤖 AI & ML Conclave 2026",
@@ -213,7 +288,9 @@ tech_events = [
         price=3999,
         total_tickets=3000,
         available_tickets=3000,
-        image_url="https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎮 India Games Developer Conference",
@@ -225,7 +302,9 @@ tech_events = [
         price=3499,
         total_tickets=4000,
         available_tickets=4000,
-        image_url="https://images.pexels.com/photos/2523919/pexels-photo-2523919.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/2523919/pexels-photo-2523919.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🔧 Google I/O Extended India",
@@ -237,7 +316,9 @@ tech_events = [
         price=1999,
         total_tickets=8000,
         available_tickets=8000,
-        image_url="https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="☁️ Microsoft Azure Conference",
@@ -249,12 +330,14 @@ tech_events = [
         price=2499,
         total_tickets=6000,
         available_tickets=6000,
-        image_url="https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
 ]
 
 # ============================================
-# SPORTS EVENTS (6 events) - FIXED WORKING IMAGES
+# SPORTS EVENTS (6 events)
 # ============================================
 sports_events = [
     Event(
@@ -267,7 +350,9 @@ sports_events = [
         price=8999,
         total_tickets=33000,
         available_tickets=33000,
-        image_url="https://images.pexels.com/photos/1884574/pexels-photo-1884574.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1884574/pexels-photo-1884574.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="⚽ Indian Super League - Final",
@@ -279,7 +364,9 @@ sports_events = [
         price=4999,
         total_tickets=65000,
         available_tickets=65000,
-        image_url="https://images.pexels.com/photos/412541/pexels-photo-412541.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/412541/pexels-photo-412541.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🏸 India Open Badminton Championships",
@@ -291,7 +378,9 @@ sports_events = [
         price=2999,
         total_tickets=8000,
         available_tickets=8000,
-        image_url="https://images.pexels.com/photos/1101947/pexels-photo-1101947.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1101947/pexels-photo-1101947.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🏀 Pro Kabaddi League - Playoffs",
@@ -303,7 +392,9 @@ sports_events = [
         price=1999,
         total_tickets=15000,
         available_tickets=15000,
-        image_url="https://images.pexels.com/photos/1350762/pexels-photo-1350762.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1350762/pexels-photo-1350762.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🎾 Tennis Premier League - Final",
@@ -315,7 +406,9 @@ sports_events = [
         price=3499,
         total_tickets=10000,
         available_tickets=10000,
-        image_url="https://images.pexels.com/photos/412541/pexels-photo-412541.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/412541/pexels-photo-412541.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🏏 India vs Australia - Test Match",
@@ -327,12 +420,14 @@ sports_events = [
         price=3999,
         total_tickets=68000,
         available_tickets=68000,
-        image_url="https://images.pexels.com/photos/1340721/pexels-photo-1340721.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/1340721/pexels-photo-1340721.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
 ]
 
 # ============================================
-# BUSINESS EVENTS (6 events) - FIXED WORKING IMAGES
+# BUSINESS EVENTS (6 events)
 # ============================================
 business_events = [
     Event(
@@ -345,7 +440,9 @@ business_events = [
         price=14999,
         total_tickets=2000,
         available_tickets=2000,
-        image_url="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🏆 Startup Mahakumbh",
@@ -357,7 +454,9 @@ business_events = [
         price=2999,
         total_tickets=15000,
         available_tickets=15000,
-        image_url="https://images.pexels.com/photos/3184293/pexels-photo-3184293.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/3184293/pexels-photo-3184293.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="👩‍💼 Women in Leadership Conference",
@@ -369,7 +468,9 @@ business_events = [
         price=7999,
         total_tickets=1500,
         available_tickets=1500,
-        image_url="https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/3769021/pexels-photo-3769021.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🏢 Real Estate Investment Expo",
@@ -381,7 +482,9 @@ business_events = [
         price=4999,
         total_tickets=5000,
         available_tickets=5000,
-        image_url="https://images.pexels.com/photos/280232/pexels-photo-280232.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/280232/pexels-photo-280232.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="📈 Digital Marketing Summit",
@@ -393,7 +496,9 @@ business_events = [
         price=2999,
         total_tickets=3000,
         available_tickets=3000,
-        image_url="https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
     Event(
         title="🏦 Fintech Conclave India",
@@ -405,7 +510,9 @@ business_events = [
         price=5999,
         total_tickets=4000,
         available_tickets=4000,
-        image_url="https://images.pexels.com/photos/6802124/pexels-photo-6802124.jpeg?auto=compress&cs=tinysrgb&w=800"
+        image_url="https://images.pexels.com/photos/6802124/pexels-photo-6802124.jpeg?auto=compress&cs=tinysrgb&w=800",
+        organizer_id=organizer.id,
+        event_status=EventStatus.UPCOMING
     ),
 ]
 
@@ -413,7 +520,7 @@ business_events = [
 all_events = music_events + comedy_events + tech_events + sports_events + business_events
 
 # Verify count
-print(f"Total events created: {len(all_events)}")
+print(f"\nTotal events to create: {len(all_events)}")
 assert len(all_events) == 31, "Should have exactly 31 events!"
 
 # Add all events to database

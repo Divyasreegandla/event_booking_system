@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.auth import UserCreate
 from app.utils.security import verify_password, get_password_hash, create_access_token
 from app.config import settings
@@ -25,7 +25,8 @@ class AuthService:
             email=user_data.email,
             username=user_data.username,
             hashed_password=hashed_password,
-            is_admin=False  # Default to non-admin
+            role=user_data.role,
+            is_admin=(user_data.role == UserRole.ADMIN)
         )
         
         self.db.add(db_user)

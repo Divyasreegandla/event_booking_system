@@ -1,6 +1,13 @@
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
 from typing import Optional
+from enum import Enum
+
+class EventStatus(str, Enum):
+    UPCOMING = "UPCOMING"
+    ONGOING = "ONGOING"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 class EventCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=200)
@@ -22,22 +29,30 @@ class EventCreate(BaseModel):
 class EventUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    venue: Optional[str] = None
+    city: Optional[str] = None
+    event_date: Optional[datetime] = None
     price: Optional[float] = None
-    available_tickets: Optional[int] = None
+    total_tickets: Optional[int] = None
+    image_url: Optional[str] = None
+    event_status: Optional[EventStatus] = None
 
 class EventResponse(BaseModel):
     id: int
     title: str
-    description: Optional[str] = None  # Changed to Optional
-    category: Optional[str] = None      # Changed to Optional
+    description: Optional[str] = None
+    category: Optional[str] = None
     venue: str
-    city: Optional[str] = None           # Changed to Optional
+    city: Optional[str] = None
     event_date: datetime
     price: float
     total_tickets: int
     available_tickets: int
     image_url: Optional[str] = None
     is_active: bool = True
+    organizer_id: int
+    event_status: str
+    organizer_name: Optional[str] = None
     
     class Config:
         from_attributes = True

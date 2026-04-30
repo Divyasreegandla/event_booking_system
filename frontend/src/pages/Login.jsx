@@ -56,6 +56,9 @@ const Login = () => {
         <div className="auth-footer">
           Don't have an account? <Link to="/register">Sign up</Link>
         </div>
+        <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '12px', color: '#9ca3af' }}>
+          Demo: user@smartevent.com / user123
+        </div>
       </div>
     </div>
   );

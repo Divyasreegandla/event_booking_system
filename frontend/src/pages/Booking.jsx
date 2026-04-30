@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createBooking } from '../services/api';
 import toast from 'react-hot-toast';
+import BackButton from '../components/BackButton';
 
 const Booking = () => {
   const location = useLocation();
@@ -44,19 +45,18 @@ const Booking = () => {
     }
   };
 
-  const goBack = () => {
-    navigate(-1);
-  };
-
   return (
     <div className="booking-container">
-      <button onClick={goBack} className="back-button">← Back to Event</button>
+      <BackButton />
       
       <div className="booking-wrapper">
         <div className="booking-event-details">
           <h2>Event Details</h2>
           <div className="booking-event-card">
-            <div className="booking-event-image" style={{ backgroundImage: `url(${event.image_url || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=200&fit=crop'})` }}></div>
+            <div 
+              className="booking-event-image" 
+              style={{ backgroundImage: `url(${event.image_url || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=200&fit=crop'})` }}
+            ></div>
             <div className="booking-event-info">
               <h3>{event.title}</h3>
               <p><strong>📅 Date:</strong> {formatDate(event.event_date)}</p>

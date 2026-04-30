@@ -1,3 +1,4 @@
+// frontend/src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { getCurrentUser, login as loginApi, register as registerApi } from '../services/api';
 import toast from 'react-hot-toast';
@@ -8,26 +9,33 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem('token'));
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
     if (token) {
       fetchUser();
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   const fetchUser = async () => {
     try {
       const response = await getCurrentUser();
-      setUser(response.data);
+      const userData = response.data;
+      setUser(userData);
+      const role = userData.role || localStorage.getItem('userRole') || 'USER';
+      setUserRole(role);
+      localStorage.setItem('userRole', role);
     } catch (error) {
       console.error('Failed to fetch user:', error);
       localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem('userRole');
+      setToken(null);
       setUser(null);
+      setUserRole(null);
     } finally {
       setLoading(false);
     }
@@ -39,7 +47,8 @@ export const AuthProvider = ({ children }) => {
       toast.success('Registration successful! Please login.');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Registration failed');
+      const message = error.response?.data?.detail || 'Registration failed';
+      toast.error(message);
       throw error;
     }
   };
@@ -47,31 +56,58 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await loginApi(email, password);
-      const { access_token } = response.data;
+      const { access_token, role } = response.data;
+      
+      // Store token and role
       localStorage.setItem('token', access_token);
-      await fetchUser();
-      toast.success('Login successful!');
-      return response.data;
+      localStorage.setItem('userRole', role);
+      setToken(access_token);
+      setUserRole(role);
+      
+      // Fetch user data
+      const userResponse = await getCurrentUser();
+      setUser(userResponse.data);
+      
+      toast.success(`Welcome ${userResponse.data.username}! (${role})`);
+      return { ...response.data, user: userResponse.data };
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Login failed');
+      const message = error.response?.data?.detail || 'Login failed';
+      toast.error(message);
       throw error;
     }
   };
 
   const logout = () => {
-    // Clear all localStorage items
+    // Clear all localStorage
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // Clear user state
+    localStorage.removeItem('userRole');
+    
+    // Clear all state
+    setToken(null);
     setUser(null);
+    setUserRole(null);
+    
     // Show success message
     toast.success('Logged out successfully');
-    // Force reload to clear any cached state
-    window.location.href = '/login';
   };
 
+  const isAdmin = () => userRole === 'ADMIN';
+  const isOrganizer = () => userRole === 'ORGANIZER';
+  const isUser = () => userRole === 'USER';
+
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userRole, 
+      loading, 
+      register, 
+      login, 
+      logout,
+      token,
+      isAdmin,
+      isOrganizer,
+      isUser
+    }}>
       {children}
     </AuthContext.Provider>
   );

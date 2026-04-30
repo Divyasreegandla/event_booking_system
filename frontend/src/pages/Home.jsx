@@ -57,13 +57,11 @@ const Home = () => {
 
   return (
     <div>
-      {/* Hero Section */}
       <div className="hero">
         <h1>Discover Amazing Events</h1>
         <p>Book tickets for concerts, conferences, sports, comedy, and more!</p>
       </div>
 
-      {/* Search Bar */}
       <div className="search-bar">
         <input
           type="text"
@@ -74,7 +72,6 @@ const Home = () => {
         />
       </div>
 
-      {/* Category Filters - Now includes Comedy */}
       <div className="category-filters">
         {categories.map(cat => (
           <button
@@ -87,12 +84,10 @@ const Home = () => {
         ))}
       </div>
 
-      {/* Results Count */}
       <div className="results-count">
         Found {filteredEvents.length} amazing events for you
       </div>
 
-      {/* Events Grid */}
       {filteredEvents.length === 0 ? (
         <div className="no-results">
           <span>🎟️</span>

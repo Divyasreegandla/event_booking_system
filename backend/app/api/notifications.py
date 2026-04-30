@@ -5,6 +5,10 @@ from app.database.session import get_db
 from app.services.auth_service import AuthService
 from app.models.notification import Notification
 from app.services.booking_service import BookingService
+from app.dependencies.roles import require_organizer
+from app.models.user import User
+from app.models.event import Event
+from app.models.booking import Booking
 
 
 router = APIRouter()
@@ -104,10 +108,23 @@ async def send_reminder(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ):
+    """Send reminder - Only organizer or admin can send"""
     token = credentials.credentials
     auth_service = AuthService(db)
     current_user = auth_service.get_current_user(token)
     
     booking_service = BookingService(db)
-    result = booking_service.send_reminder(booking_id, current_user.id)
+    
+    # Get booking to verify ownership
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
+    event = db.query(Event).filter(Event.id == booking.event_id).first()
+    
+    # Check if user is admin or event organizer
+    if current_user.role != "ADMIN" and event.organizer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only send reminders for your own events")
+    
+    result = booking_service.send_reminder(booking_id, booking.user_id)
     return result

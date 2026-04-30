@@ -7,6 +7,7 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('USER');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await register({ username, email, password });
+      await register({ username, email, password, role });
       navigate('/login');
     } catch (error) {
       // Error handled in auth context
@@ -61,6 +62,13 @@ const Register = () => {
               className="input-field"
               placeholder="you@example.com"
             />
+          </div>
+          <div className="form-group">
+            <label>Role</label>
+            <select value={role} onChange={(e) => setRole(e.target.value)} className="input-field">
+              <option value="USER">User - Browse and book events</option>
+              <option value="ORGANIZER">Organizer - Create and manage events</option>
+            </select>
           </div>
           <div className="form-group">
             <label>Password</label>

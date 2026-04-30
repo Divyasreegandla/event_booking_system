@@ -5,11 +5,10 @@ const BackButton = ({ fallbackPath = '/' }) => {
   const navigate = useNavigate();
 
   const goBack = () => {
-    // Check if there's a previous page in history
     if (window.history.length > 1) {
-      navigate(-1); // Go back to previous page
+      navigate(-1);
     } else {
-      navigate(fallbackPath); // Go to home if no history
+      navigate(fallbackPath);
     }
   };
 

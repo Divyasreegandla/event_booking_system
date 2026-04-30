@@ -7,6 +7,7 @@ from app.schemas.auth import UserCreate, Token, UserResponse
 from app.services.auth_service import AuthService
 from app.config import settings
 from app.utils.security import create_access_token
+from app.dependencies.roles import get_current_user
 
 router = APIRouter()
 security = HTTPBearer()
@@ -14,7 +15,8 @@ security = HTTPBearer()
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     auth_service = AuthService(db)
-    return auth_service.register_user(user_data)
+    user = auth_service.register_user(user_data)
+    return user
 
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -26,11 +28,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             detail="Incorrect email or password",
         )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
-    return {"access_token": access_token, "token_type": "bearer"}
+    access_token = create_access_token(data={"sub": user.email})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "role": user.role.value
+    }
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
-    token = credentials.credentials
-    auth_service = AuthService(db)
-    return auth_service.get_current_user(token)
+async def get_current_user_endpoint(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return current_user

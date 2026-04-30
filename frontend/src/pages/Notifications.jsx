@@ -41,22 +41,18 @@ const Notifications = () => {
 
   const getIcon = (type) => {
     switch (type) {
-      case 'BOOKING':
-        return '🎫';
-      case 'EVENT_REMINDER':
-        return '🔔';
-      default:
-        return '📢';
+      case 'BOOKING': return '🎫';
+      case 'EVENT_REMINDER': return '🔔';
+      default: return '📢';
     }
   };
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    const diffMins = Math.floor((now - date) / 60000);
+    const diffHours = Math.floor((now - date) / 3600000);
+    const diffDays = Math.floor((now - date) / 86400000);
 
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins} min ago`;
@@ -73,10 +69,10 @@ const Notifications = () => {
   }
 
   return (
-    <div>
-       <BackButton />
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      <BackButton />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 className="page-title">Notifications</h1>
+        <h1 style={{ fontSize: '28px' }}>Notifications</h1>
         {notifications.some(n => !n.is_read) && (
           <button onClick={handleMarkAllRead} className="btn-secondary" style={{ padding: '8px 16px' }}>
             Mark All as Read

@@ -1,63 +1,72 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.models.booking import Booking
+from app.dependencies.roles import require_admin
+from app.models.user import User, UserRole
 from app.models.event import Event
-from app.models.user import User
-from app.services.auth_service import AuthService
+from app.models.booking import Booking
+from app.schemas.auth import UserResponse
 
 router = APIRouter()
-security = HTTPBearer()
 
-def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
-    token = credentials.credentials
-    auth_service = AuthService(db)
-    user = auth_service.get_current_user(token)
-    if not user.is_admin:
-        raise HTTPException(status_code=403, detail="Admin access required")
-    return user
-
-@router.get("/bookings/all")
-async def get_all_bookings(
+@router.get("/users")
+async def get_all_users(
     skip: int = 0,
     limit: int = 100,
-    admin=Depends(get_current_admin),
+    role: str = None,
+    current_user = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    bookings = db.query(Booking).offset(skip).limit(limit).all()
-    return bookings
+    query = db.query(User)
+    if role:
+        query = query.filter(User.role == role)
+    users = query.offset(skip).limit(limit).all()
+    return users
 
-@router.put("/bookings/{booking_id}/status")
-async def update_booking_status(
-    booking_id: int,
-    status: str,
-    admin=Depends(get_current_admin),
+@router.put("/users/{user_id}/role")
+async def update_user_role(
+    user_id: int,
+    role: str,
+    current_user = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
-    booking = db.query(Booking).filter(Booking.id == booking_id).first()
-    if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+    if role not in [r.value for r in UserRole]:
+        raise HTTPException(status_code=400, detail="Invalid role")
     
-    if status not in ['pending', 'confirmed', 'cancelled']:
-        raise HTTPException(status_code=400, detail="Invalid status")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     
-    booking.status = status
+    user.role = role
+    user.is_admin = (role == UserRole.ADMIN.value)
     db.commit()
-    return {"message": f"Booking status updated to {status}"}
-
-@router.get("/dashboard/stats")
-async def get_dashboard_stats(admin=Depends(get_current_admin), db: Session = Depends(get_db)):
-    total_users = db.query(User).count()
-    total_events = db.query(Event).count()
-    total_bookings = db.query(Booking).count()
-    confirmed_bookings = db.query(Booking).filter(Booking.status == "confirmed").count()
-    total_revenue = db.query(Booking).filter(Booking.status == "confirmed").with_entities(db.func.sum(Booking.total_price)).scalar() or 0
     
-    return {
-        "total_users": total_users,
-        "total_events": total_events,
-        "total_bookings": total_bookings,
-        "confirmed_bookings": confirmed_bookings,
-        "total_revenue": total_revenue
-    }
+    return {"message": f"User role updated to {role}"}
+
+@router.get("/events/all")
+async def get_all_events_admin(
+    skip: int = 0,
+    limit: int = 100,
+    status: str = None,
+    current_user = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Event)
+    if status:
+        query = query.filter(Event.event_status == status)
+    events = query.offset(skip).limit(limit).all()
+    return events
+
+@router.get("/bookings/all")
+async def get_all_bookings_admin(
+    skip: int = 0,
+    limit: int = 100,
+    status: str = None,
+    current_user = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Booking)
+    if status:
+        query = query.filter(Booking.status == status)
+    bookings = query.offset(skip).limit(limit).all()
+    return bookings
