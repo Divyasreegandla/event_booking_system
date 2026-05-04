@@ -11,6 +11,8 @@ from app.models.user import User
 from app.models.ticket import Ticket
 from app.models.booking import Booking
 from app.models.event import Event
+from app.schemas.booking import BookingCreate, BookingCreateWithCoupon
+
 
 router = APIRouter()
 security = HTTPBearer()
@@ -26,6 +28,21 @@ async def create_booking(
         current_user.id, 
         booking_data.event_id, 
         booking_data.quantity
+    )
+    return booking
+
+@router.post("/with-coupon", status_code=status.HTTP_201_CREATED)
+async def create_booking_with_coupon(
+    booking_data: BookingCreateWithCoupon,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    booking_service = BookingService(db)
+    booking = booking_service.create_booking_with_coupon(
+        current_user.id, 
+        booking_data.event_id, 
+        booking_data.quantity,
+        booking_data.coupon_code
     )
     return booking
 

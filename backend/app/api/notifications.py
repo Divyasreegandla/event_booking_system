@@ -1,32 +1,28 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.database.session import get_db
-from app.services.auth_service import AuthService
-from app.models.notification import Notification
-from app.services.booking_service import BookingService
-from app.dependencies.roles import require_organizer
+from app.dependencies.roles import get_current_user
 from app.models.user import User
-from app.models.event import Event
-from app.models.booking import Booking
-
+from app.models.notification import Notification
+from app.services.notification_service import NotificationService
+from app.services.auth_service import AuthService
 
 router = APIRouter()
-security = HTTPBearer()
+
 
 @router.get("/my-notifications")
 async def get_my_notifications(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    unread_only: bool = False,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get notifications for logged-in user"""
-    token = credentials.credentials
-    auth_service = AuthService(db)
-    current_user = auth_service.get_current_user(token)
-    
-    notifications = db.query(Notification).filter(
-        Notification.user_id == current_user.id
-    ).order_by(Notification.created_at.desc()).all()
+    notification_service = NotificationService(db)
+    notifications = notification_service.get_user_notifications(
+        current_user.id, skip, limit, unread_only
+    )
     
     result = []
     for notif in notifications:
@@ -40,36 +36,52 @@ async def get_my_notifications(
             "booking_reference": notif.booking_reference
         })
     
-    return {"notifications": result}
+    return {"notifications": result, "count": len(result)}
+
 
 @router.get("/unread-count")
 async def get_unread_count(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Get unread notification count"""
-    token = credentials.credentials
-    auth_service = AuthService(db)
-    current_user = auth_service.get_current_user(token)
-    
-    count = db.query(Notification).filter(
-        Notification.user_id == current_user.id,
-        Notification.is_read == False
-    ).count()
-    
+    notification_service = NotificationService(db)
+    count = notification_service.get_unread_count(current_user.id)
     return {"unread_count": count}
+
 
 @router.post("/{notification_id}/read")
 async def mark_as_read(
     notification_id: int,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Mark notification as read"""
-    token = credentials.credentials
-    auth_service = AuthService(db)
-    current_user = auth_service.get_current_user(token)
-    
+    notification_service = NotificationService(db)
+    success = notification_service.mark_as_read(notification_id, current_user.id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"message": "Notification marked as read"}
+
+
+@router.post("/mark-all-read")
+async def mark_all_read(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Mark all notifications as read"""
+    notification_service = NotificationService(db)
+    notification_service.mark_all_as_read(current_user.id)
+    return {"message": "All notifications marked as read"}
+
+
+@router.delete("/{notification_id}")
+async def delete_notification(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a notification"""
     notification = db.query(Notification).filter(
         Notification.id == notification_id,
         Notification.user_id == current_user.id
@@ -78,51 +90,31 @@ async def mark_as_read(
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     
-    notification.is_read = True
+    db.delete(notification)
     db.commit()
     
-    return {"message": "Notification marked as read"}
+    return {"message": "Notification deleted"}
 
-@router.post("/mark-all-read")
-async def mark_all_read(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-):
-    """Mark all notifications as read"""
-    token = credentials.credentials
-    auth_service = AuthService(db)
-    current_user = auth_service.get_current_user(token)
-    
-    db.query(Notification).filter(
-        Notification.user_id == current_user.id,
-        Notification.is_read == False
-    ).update({"is_read": True})
-    
-    db.commit()
-    
-    return {"message": "All notifications marked as read"}
 
 @router.post("/{booking_id}/reminder")
 async def send_reminder(
     booking_id: int,
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Send reminder - Only organizer or admin can send"""
-    token = credentials.credentials
-    auth_service = AuthService(db)
-    current_user = auth_service.get_current_user(token)
+    from app.models.booking import Booking
+    from app.models.event import Event
+    from app.services.booking_service import BookingService
     
     booking_service = BookingService(db)
     
-    # Get booking to verify ownership
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     
     event = db.query(Event).filter(Event.id == booking.event_id).first()
     
-    # Check if user is admin or event organizer
     if current_user.role != "ADMIN" and event.organizer_id != current_user.id:
         raise HTTPException(status_code=403, detail="You can only send reminders for your own events")
     

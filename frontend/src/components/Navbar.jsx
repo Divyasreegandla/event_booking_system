@@ -59,7 +59,7 @@ const Navbar = () => {
               <Link to="/bookings" onClick={() => setShowMobileMenu(false)}>My Bookings</Link>
               <Link to="/tickets" onClick={() => setShowMobileMenu(false)}>My Tickets</Link>
               
-              {/* Organizer Dropdown - Fixed */}
+              {/* Organizer Dropdown */}
               {(isOrganizer() || isAdmin()) && (
                 <div 
                   className="dropdown"
@@ -75,7 +75,7 @@ const Navbar = () => {
                 </div>
               )}
               
-              {/* Admin Dropdown - Fixed */}
+              {/* Admin Dropdown */}
               {isAdmin() && (
                 <div 
                   className="dropdown"
@@ -89,6 +89,7 @@ const Navbar = () => {
                     <Link to="/admin/events" onClick={() => setShowMobileMenu(false)}>All Events</Link>
                     <Link to="/admin/bookings" onClick={() => setShowMobileMenu(false)}>All Bookings</Link>
                     <Link to="/admin/analytics" onClick={() => setShowMobileMenu(false)}>Analytics</Link>
+                    <Link to="/admin/coupons" onClick={() => setShowMobileMenu(false)}>🎟️ Coupons</Link>
                     <Link to="/admin/scan" onClick={() => setShowMobileMenu(false)}>🎟️ Verify Ticket</Link>
                   </div>
                 </div>
@@ -148,7 +149,6 @@ const Navbar = () => {
           cursor: pointer;
         }
         
-        /* Dropdown Styles - Fixed */
         .dropdown {
           position: relative;
           display: inline-block;
@@ -207,7 +207,6 @@ const Navbar = () => {
           color: #6366f1;
         }
         
-        /* User Menu Styles */
         .user-menu {
           position: relative;
           cursor: pointer;

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEvent } from '../services/api';
+import { getEvent, getMyBookings } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import BackButton from '../components/BackButton';
+import ReviewsSection from '../components/ReviewsSection';
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -11,11 +12,15 @@ const EventDetails = () => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [userHasAttended, setUserHasAttended] = useState(false);
 
   useEffect(() => {
     fetchEvent();
+    if (user) {
+      checkUserAttendance();
+    }
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [id, user]);
 
   const fetchEvent = async () => {
     try {
@@ -26,6 +31,28 @@ const EventDetails = () => {
       navigate('/');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkUserAttendance = async () => {
+    try {
+      const response = await getMyBookings();
+      let bookings = [];
+      if (Array.isArray(response.data)) {
+        bookings = response.data;
+      } else if (response.data?.bookings) {
+        bookings = response.data.bookings;
+      }
+      
+      const hasAttended = bookings.some(
+        booking => booking.event_id === parseInt(id) && 
+        booking.status === 'confirmed' &&
+        new Date(booking.event_date) < new Date()
+      );
+      setUserHasAttended(hasAttended);
+      console.log('User has attended:', hasAttended); // Debug log
+    } catch (error) {
+      console.error('Failed to check attendance:', error);
     }
   };
 
@@ -83,7 +110,7 @@ const EventDetails = () => {
         </div>
         
         <div className="event-detail-content">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <h1 className="event-detail-title">{event.title}</h1>
             <span style={{ 
               background: getStatusColor(), 
@@ -164,6 +191,9 @@ const EventDetails = () => {
               <p>This event has no more tickets available.</p>
             </div>
           )}
+          
+          {/* REVIEWS SECTION */}
+          <ReviewsSection eventId={event.id} userHasAttended={userHasAttended} />
         </div>
       </div>
     </div>

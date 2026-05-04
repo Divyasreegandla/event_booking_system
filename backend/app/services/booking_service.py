@@ -6,7 +6,7 @@ import string
 import qrcode
 from io import BytesIO
 import base64
-from app.models.booking import Booking
+from app.models.booking import Booking, BookingStatus
 from app.models.event import Event
 from app.models.ticket import Ticket
 from app.models.notification import Notification
@@ -62,9 +62,15 @@ class BookingService:
             print(f"Failed to send email: {e}")
             return False
     
-    def send_booking_confirmation_email(self, user_email, username, booking_ref, event, quantity, total_price):
-        """Send booking confirmation email"""
+    def send_booking_confirmation_email(self, user_email, username, booking_ref, event, quantity, total_price, discount_amount=0):
+        """Send booking confirmation email with discount info"""
         subject = f"🎫 Booking Confirmed: {event.title}"
+        
+        discount_html = ""
+        if discount_amount > 0:
+            discount_html = f"""
+            <p><strong>Discount Applied:</strong> ₹{discount_amount}</p>
+            """
         
         body = f"""
         <html>
@@ -83,7 +89,8 @@ class BookingService:
                         <p><strong>Date:</strong> {event.event_date.strftime('%B %d, %Y at %I:%M %p')}</p>
                         <p><strong>Venue:</strong> {event.venue}, {event.city}</p>
                         <p><strong>Quantity:</strong> {quantity} ticket(s)</p>
-                        <p><strong>Total Price:</strong> ${total_price}</p>
+                        {discount_html}
+                        <p><strong>Total Price:</strong> ₹{total_price}</p>
                         <p><strong>Booking Reference:</strong> {booking_ref}</p>
                     </div>
                     
@@ -123,7 +130,7 @@ class BookingService:
                         <p><strong>Date:</strong> {event.event_date.strftime('%B %d, %Y at %I:%M %p')}</p>
                         <p><strong>Venue:</strong> {event.venue}, {event.city}</p>
                         <p><strong>Quantity:</strong> {quantity} ticket(s)</p>
-                        <p><strong>Refund Amount:</strong> ${total_price}</p>
+                        <p><strong>Refund Amount:</strong> ₹{total_price}</p>
                         <p><strong>Booking Reference:</strong> {booking_ref}</p>
                     </div>
                     
@@ -187,6 +194,40 @@ class BookingService:
         
         return self.send_email(user_email, subject, body)
     
+    def send_payment_success_email(self, user_email, username, booking_ref, event, amount):
+        """Send payment success email"""
+        subject = f"✅ Payment Successful: {event.title}"
+        
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+                    <h2>Payment Successful! ✅</h2>
+                </div>
+                <div style="padding: 20px; background: #f9fafb;">
+                    <p>Dear <strong>{username}</strong>,</p>
+                    <p>Your payment has been received successfully!</p>
+                    
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <h3>Payment Details:</h3>
+                        <p><strong>Event:</strong> {event.title}</p>
+                        <p><strong>Amount Paid:</strong> ₹{amount}</p>
+                        <p><strong>Booking Reference:</strong> {booking_ref}</p>
+                    </div>
+                    
+                    <p>Your booking is now confirmed. You can view your tickets in your dashboard.</p>
+                </div>
+                <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
+                    <p>Thank you for booking with SmartEvent!</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return self.send_email(user_email, subject, body)
+    
     def create_notification(self, user_id: int, title: str, message: str, type: str, booking_reference: str = None, event_id: int = None):
         notification = Notification(
             user_id=user_id,
@@ -201,7 +242,7 @@ class BookingService:
         return notification
     
     def create_booking(self, user_id: int, event_id: int, quantity: int):
-        # Check event
+        """Create a booking (without coupon) - stays in PENDING state"""
         event = self.db.query(Event).filter(Event.id == event_id).first()
         if not event:
             raise HTTPException(status_code=404, detail="Event not found")
@@ -209,14 +250,16 @@ class BookingService:
         if event.available_tickets < quantity:
             raise HTTPException(status_code=400, detail="Not enough tickets available")
         
-        if event.event_date < datetime.now():
-            raise HTTPException(status_code=400, detail="Event has already passed")
+        # if event.event_date < datetime.now():
+        #     raise HTTPException(status_code=400, detail="Event has already passed")
         
-        # Get user
         user = self.db.query(User).filter(User.id == user_id).first()
         
-        # Create booking with PENDING status
+        # Calculate amounts
         total_price = event.price * quantity
+        discount_amount = 0  # ← ADD THIS
+        final_amount = total_price  # ← ADD THIS
+        
         booking_reference = self.generate_booking_reference()
         
         booking = Booking(
@@ -225,54 +268,26 @@ class BookingService:
             event_id=event_id,
             quantity=quantity,
             total_price=total_price,
+            discount_amount=discount_amount,  # ← ADD THIS
+            final_amount=final_amount,  # ← ADD THIS
             status="pending"
         )
         
-        # Update available tickets
         event.available_tickets -= quantity
         
         self.db.add(booking)
         self.db.commit()
         self.db.refresh(booking)
         
-        # Confirm the booking (simulate successful payment)
-        booking.status = "confirmed"
-        
-        # Create individual tickets with QR codes
-        for i in range(quantity):
-            ticket_code = f"{booking_reference}-{i+1}"
-            qr_data = f"TICKET:{ticket_code}:EVENT:{event_id}"
-            qr_code = self.generate_qr_code(qr_data)
-            
-            ticket = Ticket(
-                ticket_code=ticket_code,
-                qr_code=qr_code,
-                booking_id=booking.id
-            )
-            self.db.add(ticket)
-        
-        # Create notification
+        # Create notification for pending booking
         self.create_notification(
             user_id=user_id,
-            title="🎫 Booking Confirmed!",
-            message=f"Your booking {booking_reference} for {quantity} ticket(s) to {event.title} has been confirmed.",
+            title="📝 Booking Created",
+            message=f"Your booking {booking_reference} for {quantity} ticket(s) to {event.title} has been created. Please complete payment to confirm.",
             type="BOOKING",
             booking_reference=booking_reference,
             event_id=event_id
         )
-        
-        # Send confirmation email
-        if user and user.email:
-            self.send_booking_confirmation_email(
-                user.email,
-                user.username,
-                booking_reference,
-                event,
-                quantity,
-                total_price
-            )
-        
-        self.db.commit()
         
         return {
             "id": booking.id,
@@ -280,7 +295,88 @@ class BookingService:
             "event_id": event_id,
             "quantity": quantity,
             "total_price": total_price,
-            "status": "confirmed",
+            "discount_amount": discount_amount,
+            "final_amount": final_amount,
+            "status": "pending",
+            "booking_date": booking.booking_date
+        }
+        
+    def create_booking_with_coupon(self, user_id: int, event_id: int, quantity: int, coupon_code: str = None):
+        """Create booking with optional coupon - stays in PENDING state"""
+        event = self.db.query(Event).filter(Event.id == event_id).first()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        
+        if event.available_tickets < quantity:
+            raise HTTPException(status_code=400, detail="Not enough tickets available")
+        
+        # if event.event_date < datetime.now():
+        #     raise HTTPException(status_code=400, detail="Event has already passed")
+        
+        
+        user = self.db.query(User).filter(User.id == user_id).first()
+        
+        total_price = event.price * quantity
+        discount_amount = 0
+        final_amount = total_price
+        coupon_id = None
+        
+        if coupon_code:
+            from app.services.coupon_service import CouponService
+            coupon_service = CouponService(self.db)
+            validation = coupon_service.validate_coupon(coupon_code, total_price)
+            
+            if validation.valid:
+                discount_amount = validation.discount_amount
+                final_amount = validation.final_amount
+                coupon_id = validation.coupon_id
+        
+        booking_reference = self.generate_booking_reference()
+        
+        booking = Booking(
+            booking_reference=booking_reference,
+            user_id=user_id,
+            event_id=event_id,
+            quantity=quantity,
+            total_price=total_price,
+            discount_amount=discount_amount,
+            final_amount=final_amount,
+            coupon_id=coupon_id,
+            status="pending"  # ← PENDING, NOT confirmed
+        )
+        
+        event.available_tickets -= quantity
+        
+        self.db.add(booking)
+        self.db.commit()
+        self.db.refresh(booking)
+        
+        if coupon_id:
+            from app.services.coupon_service import CouponService
+            coupon_service = CouponService(self.db)
+            coupon_service.apply_coupon(coupon_id)
+        
+        # Create notification (NOT confirmed yet)
+        discount_message = f" with ₹{discount_amount} discount" if discount_amount > 0 else ""
+        self.create_notification(
+            user_id=user_id,
+            title="📝 Booking Created",
+            message=f"Your booking {booking_reference} for {quantity} ticket(s) to {event.title} has been created{discount_message}. Please complete payment to confirm.",
+            type="BOOKING",
+            booking_reference=booking_reference,
+            event_id=event_id
+        )
+        
+        return {
+            "id": booking.id,
+            "booking_reference": booking_reference,
+            "event_id": event_id,
+            "quantity": quantity,
+            "total_price": total_price,
+            "discount_amount": discount_amount,
+            "final_amount": final_amount,
+            "coupon_id": coupon_id,
+            "status": "pending",  # ← PENDING
             "booking_date": booking.booking_date
         }
     
@@ -326,7 +422,7 @@ class BookingService:
                 booking.booking_reference,
                 event,
                 booking.quantity,
-                booking.total_price
+                booking.final_amount
             )
         
         self.db.commit()
@@ -348,6 +444,8 @@ class BookingService:
                 "event_id": booking.event_id,
                 "quantity": booking.quantity,
                 "total_price": booking.total_price,
+                "discount_amount": booking.discount_amount,
+                "final_amount": booking.final_amount,
                 "status": booking.status,
                 "booking_date": booking.booking_date,
                 "event_title": event.title if event else "Unknown",
@@ -358,6 +456,97 @@ class BookingService:
             })
         return result
 
+    def get_booking_by_reference(self, booking_reference: str):
+        """Get booking by reference number"""
+        booking = self.db.query(Booking).filter(
+            Booking.booking_reference == booking_reference
+        ).first()
+        return booking
+    
+    def update_booking_status(self, booking_id: int, status: str):
+        """Update booking status"""
+        booking = self.db.query(Booking).filter(Booking.id == booking_id).first()
+        if booking:
+            booking.status = status
+            self.db.commit()
+            self.db.refresh(booking)
+        return booking
+    
+    def get_booking_by_reference(self, booking_reference: str):
+        """Get booking by reference number"""
+        booking = self.db.query(Booking).filter(
+            Booking.booking_reference == booking_reference
+        ).first()
+        return booking
+
+    def update_booking_status(self, booking_id: int, status: str):
+        """Update booking status"""
+        booking = self.db.query(Booking).filter(Booking.id == booking_id).first()
+        if booking:
+            booking.status = status
+            self.db.commit()
+            self.db.refresh(booking)
+        return booking
+
+    def confirm_booking(self, booking_id: int):
+        """Confirm a booking after successful payment"""
+        booking = self.db.query(Booking).filter(Booking.id == booking_id).first()
+        
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        if booking.status == "confirmed":
+            return booking
+        
+        if booking.status != "pending":
+            raise HTTPException(status_code=400, detail=f"Booking cannot be confirmed from {booking.status} state")
+        
+        # Update booking status
+        booking.status = "confirmed"
+        
+        # Get event for tickets
+        event = self.db.query(Event).filter(Event.id == booking.event_id).first()
+        
+        # Create individual tickets with QR codes
+        for i in range(booking.quantity):
+            ticket_code = f"{booking.booking_reference}-{i+1}"
+            qr_data = f"TICKET:{ticket_code}:EVENT:{booking.event_id}"
+            qr_code = self.generate_qr_code(qr_data)
+            
+            ticket = Ticket(
+                ticket_code=ticket_code,
+                qr_code=qr_code,
+                booking_id=booking.id
+            )
+            self.db.add(ticket)
+        
+        # Create notification for confirmed booking
+        self.create_notification(
+            user_id=booking.user_id,
+            title="🎫 Booking Confirmed!",
+            message=f"Your booking {booking.booking_reference} has been confirmed after successful payment.",
+            type="BOOKING",
+            booking_reference=booking.booking_reference,
+            event_id=booking.event_id
+        )
+        
+        # Send confirmation email
+        user = self.db.query(User).filter(User.id == booking.user_id).first()
+        if user and user.email and event:
+            self.send_booking_confirmation_email(
+                user.email,
+                user.username,
+                booking.booking_reference,
+                event,
+                booking.final_amount,
+                booking.discount_amount
+            )
+        
+        self.db.commit()
+        self.db.refresh(booking)
+        
+        return booking
+    
     def send_reminder(self, booking_id: int, user_id: int):
         """Send reminder email for a booking"""
         booking = self.db.query(Booking).filter(
@@ -380,7 +569,6 @@ class BookingService:
         if event.event_date < datetime.now():
             raise HTTPException(status_code=400, detail="Event has already passed")
         
-        # Send reminder email
         email_sent = self.send_reminder_email(
             user.email,
             user.username,
@@ -388,12 +576,11 @@ class BookingService:
             event
         )
         
-        # Create reminder notification
         self.create_notification(
             user_id=user_id,
             title="🔔 Event Reminder Sent",
             message=f"Reminder email sent for {event.title} on {event.event_date.strftime('%B %d, %Y')}",
-            type="EVENT_REMINDER",
+            type="EVENT",
             booking_reference=booking.booking_reference,
             event_id=booking.event_id
         )

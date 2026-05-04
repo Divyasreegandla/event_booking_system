@@ -62,11 +62,9 @@ export const getEventBookings = (eventId) => api.get(`/events/organizer/${eventI
 export const createBooking = (data) => api.post('/bookings/', data);
 export const getMyBookings = async () => {
   const response = await api.get('/bookings/my-bookings');
-  // Ensure we always return an array
   if (!response.data) {
     return { data: [] };
   }
-  // If response is array directly, wrap it
   if (Array.isArray(response.data)) {
     return { data: response.data };
   }
@@ -78,7 +76,6 @@ export const sendReminder = (bookingId) => api.post(`/notifications/${bookingId}
 // ============ TICKET APIs ============
 export const getMyTickets = async () => {
   const response = await api.get('/bookings/my-tickets');
-  // Ensure tickets is always an array
   if (!response.data || !response.data.tickets) {
     return { data: { tickets: [] } };
   }
@@ -106,5 +103,46 @@ export const getAllBookingsAdmin = () => api.get('/admin/bookings/all');
 // ============ ORGANIZER ANALYTICS APIs ============
 export const getOrganizerEventStats = () => api.get('/analytics/organizer/event-stats');
 export const getOrganizerDashboardStats = () => api.get('/analytics/organizer/dashboard-stats');
+
+// ============ PAYMENT APIs ============
+export const initiatePayment = (bookingId, paymentMethod) => 
+  api.post('/payments/initiate', { booking_id: bookingId, payment_method: paymentMethod });
+
+export const simulatePayment = (paymentId, success = true) => 
+  api.post(`/payments/simulate/${paymentId}?success=${success}`);
+
+export const getPaymentStatus = (bookingId) => 
+  api.get(`/payments/status/${bookingId}`);
+
+// ============ COUPON APIs ============
+export const validateCoupon = (couponCode, bookingAmount) => 
+  api.post('/coupons/validate', { coupon_code: couponCode, booking_amount: bookingAmount });
+
+export const createCoupon = (couponData) => api.post('/coupons/', couponData);
+export const getAllCoupons = () => api.get('/coupons/');
+export const toggleCouponStatus = (couponId) => api.patch(`/coupons/${couponId}/toggle`);
+
+// ============ REVIEW APIs ============
+export const createReview = (eventId, rating, reviewText) => 
+  api.post(`/reviews/${eventId}`, { rating, review_text: reviewText });
+
+export const updateReview = (reviewId, rating, reviewText) => 
+  api.put(`/reviews/${reviewId}`, { rating, review_text: reviewText });
+
+export const deleteReview = (reviewId) => api.delete(`/reviews/${reviewId}`);
+
+export const getEventReviews = (eventId, skip = 0, limit = 50) => 
+  api.get(`/reviews/event/${eventId}?skip=${skip}&limit=${limit}`);
+
+export const getEventRatingStats = (eventId) => 
+  api.get(`/reviews/event/${eventId}/stats`);
+
+export const getMyReviews = () => api.get('/reviews/my-reviews');
+
+// ============ ENHANCED SEARCH APIs (KEEP ONLY ONE COPY) ============
+export const advancedSearch = (params) => api.get('/search/advanced', { params });
+export const getCities = () => api.get('/search/cities');
+export const getAllCategories = () => api.get('/search/categories');
+export const deleteNotification = (id) => api.delete(`/notifications/${id}`);
 
 export default api;

@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-import QuickLogout from './components/QuickLogout';  // Add this import
+import QuickLogout from './components/QuickLogout';
 
 // User Pages
 import Home from './pages/Home';
@@ -33,6 +33,10 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminBookings from './pages/admin/AdminBookings';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminCoupons from './pages/admin/AdminCoupons';  // ADD THIS
+
+import PaymentCheckout from './pages/PaymentCheckout';
+import PaymentConfirmation from './pages/PaymentConfirmation';
 
 function App() {
   return (
@@ -123,9 +127,25 @@ function App() {
                 <AdminAnalytics />
               </ProtectedRoute>
             } />
+            <Route path="/admin/coupons" element={  // ADD THIS ROUTE
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminCoupons />
+              </ProtectedRoute>
+            } />
             <Route path="/admin/scan" element={
               <ProtectedRoute allowedRoles={['ADMIN', 'ORGANIZER']}>
                 <QRScanner />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/payment-checkout" element={
+              <ProtectedRoute allowedRoles={['USER', 'ORGANIZER', 'ADMIN']}>
+                <PaymentCheckout />
+              </ProtectedRoute>
+            } />
+            <Route path="/payment-confirmation" element={
+              <ProtectedRoute allowedRoles={['USER', 'ORGANIZER', 'ADMIN']}>
+                <PaymentConfirmation />
               </ProtectedRoute>
             } />
 
@@ -135,7 +155,6 @@ function App() {
         </div>
         <Footer />
         
-        {/* Toaster for notifications - placed here */}
         <Toaster 
           position="top-right"
           toastOptions={{
@@ -149,9 +168,7 @@ function App() {
           }}
         />
         
-        {/* QuickLogout - floating button for debugging - placed here */}
         <QuickLogout />
-        
       </Router>
     </AuthProvider>
   );

@@ -57,3 +57,14 @@ class TicketResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+class BookingCreateWithCoupon(BaseModel):
+    event_id: int
+    quantity: int = Field(..., gt=0, le=10)
+    coupon_code: Optional[str] = Field(None, min_length=3, max_length=50)
+    
+    @validator('quantity')
+    def validate_quantity(cls, v):
+        if v > 10:
+            raise ValueError('Maximum 10 tickets per booking')
+        return v

@@ -1,4 +1,7 @@
 /* frontend/src/index.css */
+@import "slick-carousel/slick/slick.css";
+@import "slick-carousel/slick/slick-theme.css";
+
 * {
   margin: 0;
   padding: 0;
@@ -1526,3 +1529,224 @@ tr:hover {
     display: none;
   }
 }
+
+/* Payment Page Styles */
+.payment-method-option {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payment-method-option:hover {
+  border-color: #6366f1;
+  background: #f8fafc;
+}
+
+.payment-method-option.selected {
+  border-color: #6366f1;
+  background: linear-gradient(135deg, #eef2ff, #f8fafc);
+}
+
+/* Review Stars Animation */
+.star-rating span {
+  transition: transform 0.1s ease;
+}
+
+.star-rating span:hover {
+  transform: scale(1.1);
+}
+
+/* Coupon Input Animation */
+@keyframes couponSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.coupon-applied {
+  animation: couponSuccess 0.3s ease;
+}
+
+/* Payment Success Animation */
+@keyframes paymentSuccess {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.payment-success-icon {
+  animation: paymentSuccess 0.5s ease;
+}
+
+/* Event Detail Styles */
+.event-detail-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 20px;
+}
+
+.event-detail-card {
+  background: white;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
+}
+
+.event-detail-header {
+  height: 300px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.event-detail-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  padding: 2rem;
+}
+
+.event-category-large {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.85rem;
+  color: white;
+}
+
+.event-detail-content {
+  padding: 2rem;
+}
+
+.event-detail-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.event-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+}
+
+.event-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.event-info-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.event-info-value {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.event-description-section {
+  margin-bottom: 2rem;
+}
+
+.event-description-section h3 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.event-description-section p {
+  color: #475569;
+  line-height: 1.6;
+}
+
+.booking-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 1.5rem;
+  margin-top: 1rem;
+}
+
+.price-box {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  text-align: center;
+  color: white;
+}
+
+.price-label {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.price-amount {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.booking-controls {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.quantity-input {
+  width: 70px;
+  padding: 0.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.book-now-btn-large {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 1rem;
+}
+
+.book-now-btn-large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.sold-out-card {
+  text-align: center;
+  padding: 2rem;
+  background: #f1f5f9;
+  border-radius: 1rem;
+}
+
+.sold-out-card span {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+

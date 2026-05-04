@@ -4,6 +4,9 @@ from app.models.event import Event
 from app.models.booking import Booking
 from app.models.ticket import Ticket
 from app.models.notification import Notification
+from app.models.payment import Payment
+from app.models.coupon import Coupon
+from app.models.review import Review
 from app.utils.security import get_password_hash
 
 def init_db():
@@ -15,12 +18,10 @@ def init_db():
     db = SessionLocal()
     
     try:
-        # Check if admin exists
         admin = db.query(User).filter(User.email == "admin@smartevent.com").first()
         if not admin:
             print("Creating default users...")
             
-            # Create admin user
             admin_user = User(
                 email="admin@smartevent.com",
                 username="admin",
@@ -30,7 +31,6 @@ def init_db():
             )
             db.add(admin_user)
             
-            # Create organizer user
             organizer = User(
                 email="organizer@smartevent.com",
                 username="organizer",
@@ -40,7 +40,6 @@ def init_db():
             )
             db.add(organizer)
             
-            # Create regular user
             demo_user = User(
                 email="user@smartevent.com",
                 username="user",

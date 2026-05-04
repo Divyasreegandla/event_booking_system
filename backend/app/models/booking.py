@@ -22,5 +22,11 @@ class Booking(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     booking_date = Column(DateTime(timezone=True), server_default=func.now())
     
+    coupon_id = Column(Integer, ForeignKey("coupons.id"), nullable=True)
+    discount_amount = Column(Float, default=0)
+    final_amount = Column(Float, nullable=False)
+    
+
     user = relationship("User", foreign_keys=[user_id])
     event = relationship("Event", foreign_keys=[event_id])
+    coupon = relationship("Coupon", foreign_keys=[coupon_id])
