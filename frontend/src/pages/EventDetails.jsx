@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getEvent, getMyBookings } from '../services/api';
+import { getEvent, getMyBookings, trackEventView } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import BackButton from '../components/BackButton';
 import ReviewsSection from '../components/ReviewsSection';
+import WishlistButton from '../components/WishlistButton';
+import LiveEventUpdates from '../components/LiveEventUpdates';
+import SeatAvailability from '../components/SeatAvailability';
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -16,8 +19,10 @@ const EventDetails = () => {
 
   useEffect(() => {
     fetchEvent();
-    if (user) {
+    if (user && id) {
       checkUserAttendance();
+      // Track event view for recommendations
+      trackEventView(id).catch(console.error);
     }
     window.scrollTo(0, 0);
   }, [id, user]);
@@ -50,7 +55,6 @@ const EventDetails = () => {
         new Date(booking.event_date) < new Date()
       );
       setUserHasAttended(hasAttended);
-      console.log('User has attended:', hasAttended); // Debug log
     } catch (error) {
       console.error('Failed to check attendance:', error);
     }
@@ -110,18 +114,23 @@ const EventDetails = () => {
         </div>
         
         <div className="event-detail-content">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <h1 className="event-detail-title">{event.title}</h1>
-            <span style={{ 
-              background: getStatusColor(), 
-              color: 'white', 
-              padding: '4px 12px', 
-              borderRadius: '20px',
-              fontSize: '12px',
-              fontWeight: 'bold'
-            }}>
-              {event.event_status}
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <h1 className="event-detail-title">{event.title}</h1>
+                <span style={{ 
+                  background: getStatusColor(), 
+                  color: 'white', 
+                  padding: '4px 12px', 
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 'bold'
+                }}>
+                  {event.event_status}
+                </span>
+              </div>
+            </div>
+            <WishlistButton eventId={event.id} size="medium" variant="button" />
           </div>
           
           <div className="event-info-grid">
@@ -146,6 +155,13 @@ const EventDetails = () => {
               <span className="event-info-value">{event.organizer_name || 'SmartEvent'}</span>
             </div>
           </div>
+          
+          {/* Seat Availability - Module 18 */}
+          <SeatAvailability 
+            eventId={event.id} 
+            initialAvailable={event.available_tickets} 
+            totalTickets={event.total_tickets} 
+          />
           
           <div className="event-description-section">
             <h3>About This Event</h3>
@@ -192,7 +208,13 @@ const EventDetails = () => {
             </div>
           )}
           
-          {/* REVIEWS SECTION */}
+          {/* Live Event Updates - Module 21 */}
+          <LiveEventUpdates 
+            eventId={event.id} 
+            isOrganizer={user?.role === 'ORGANIZER' || user?.role === 'ADMIN'} 
+          />
+          
+          {/* Reviews Section - Module 14 */}
           <ReviewsSection eventId={event.id} userHasAttended={userHasAttended} />
         </div>
       </div>

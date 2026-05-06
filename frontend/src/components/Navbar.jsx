@@ -12,6 +12,7 @@ const Navbar = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const [profilePicError, setProfilePicError] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -41,6 +42,13 @@ const Navbar = () => {
     return '#10b981';
   };
 
+  // Get profile picture from user or localStorage
+  const getProfilePicture = () => {
+    if (user?.profile_picture) return user.profile_picture;
+    if (localStorage.getItem('userProfilePic')) return localStorage.getItem('userProfilePic');
+    return null;
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-content">
@@ -58,6 +66,8 @@ const Navbar = () => {
             <>
               <Link to="/bookings" onClick={() => setShowMobileMenu(false)}>My Bookings</Link>
               <Link to="/tickets" onClick={() => setShowMobileMenu(false)}>My Tickets</Link>
+              <Link to="/wishlist" onClick={() => setShowMobileMenu(false)}>❤️ Wishlist</Link>
+              <Link to="/profile" onClick={() => setShowMobileMenu(false)}>👤 Profile</Link>
               
               {/* Organizer Dropdown */}
               {(isOrganizer() || isAdmin()) && (
@@ -112,7 +122,22 @@ const Navbar = () => {
               {/* User Menu */}
               <div className="user-menu">
                 <div className="user-info">
-                  <span className="user-avatar">👤</span>
+                  {/* Profile Picture with error handling - FIXED POINTER */}
+                  {getProfilePicture() && !profilePicError ? (
+                    <img 
+                      src={getProfilePicture()} 
+                      alt={user.username}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }}
+                      onError={() => setProfilePicError(true)}
+                    />
+                  ) : (
+                    <span className="user-avatar" style={{ fontSize: '18px' }}>👤</span>
+                  )}
                   <span className="user-name">{user.username}</span>
                   <span className="role-badge" style={{ 
                     background: getRoleBadgeColor(),
@@ -125,6 +150,24 @@ const Navbar = () => {
                   </span>
                 </div>
                 <div className="dropdown-menu-user">
+                  <Link 
+                    to="/profile" 
+                    onClick={() => setShowMobileMenu(false)} 
+                    style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#1f2937' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    👤 My Profile
+                  </Link>
+                  <Link 
+                    to="/wishlist" 
+                    onClick={() => setShowMobileMenu(false)} 
+                    style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#1f2937' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    ❤️ Wishlist
+                  </Link>
                   <button onClick={handleLogout} className="logout-btn">
                     🚪 Logout
                   </button>
@@ -278,6 +321,16 @@ const Navbar = () => {
         
         .logout-btn:hover {
           background: #fef2f2;
+        }
+        
+        /* Profile and Wishlist link hover styles */
+        .dropdown-menu-user a {
+          transition: background 0.2s;
+        }
+        
+        .dropdown-menu-user a:hover {
+          background: #f8fafc;
+          color: #6366f1;
         }
         
         @media (max-width: 768px) {

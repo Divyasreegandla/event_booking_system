@@ -89,6 +89,7 @@ export const getNotifications = () => api.get('/notifications/my-notifications')
 export const getUnreadCount = () => api.get('/notifications/unread-count');
 export const markAsRead = (id) => api.post(`/notifications/${id}/read`);
 export const markAllRead = () => api.post('/notifications/mark-all-read');
+export const deleteNotification = (id) => api.delete(`/notifications/${id}`);
 
 // ============ ADMIN APIs ============
 export const getPlatformStats = () => api.get('/analytics/admin/platform-stats');
@@ -139,10 +140,39 @@ export const getEventRatingStats = (eventId) =>
 
 export const getMyReviews = () => api.get('/reviews/my-reviews');
 
-// ============ ENHANCED SEARCH APIs (KEEP ONLY ONE COPY) ============
+// ============ ENHANCED SEARCH APIs ============
 export const advancedSearch = (params) => api.get('/search/advanced', { params });
 export const getCities = () => api.get('/search/cities');
 export const getAllCategories = () => api.get('/search/categories');
-export const deleteNotification = (id) => api.delete(`/notifications/${id}`);
+
+// ============ PHASE 4: WISHLIST APIs ============
+export const getWishlist = () => api.get('/wishlist/');
+export const addToWishlist = (data) => api.post('/wishlist/', data);
+export const removeFromWishlist = (eventId) => api.delete(`/wishlist/${eventId}`);
+export const checkInWishlist = (eventId) => api.get(`/wishlist/check/${eventId}`);
+
+// ============ PHASE 4: RECOMMENDATION APIs ============
+export const getPersonalizedRecommendations = (limit = 6) => api.get(`/recommendations/personalized?limit=${limit}`);
+export const getTrendingEvents = (limit = 6) => api.get(`/recommendations/trending?limit=${limit}`);
+export const getSimilarEvents = (eventId, limit = 4) => api.get(`/recommendations/similar/${eventId}?limit=${limit}`);
+export const trackEventView = (eventId) => api.post(`/recommendations/track/${eventId}`);
+
+// ============ PHASE 4: EVENT UPDATES APIs ============
+export const getEventUpdates = (eventId) => api.get(`/event-updates/event/${eventId}`);
+export const createEventUpdate = (eventId, data) => api.post(`/event-updates/event/${eventId}`, data);
+export const deleteEventUpdate = (updateId) => api.delete(`/event-updates/${updateId}`);
+
+// ============ PHASE 4: USER PROFILE APIs ============
+export const getProfile = () => api.get('/user/me');
+export const updateProfile = (data) => api.put('/user/profile', data);
+export const uploadProfilePicture = (formData) => api.post('/user/profile-picture', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
+export const deleteProfilePicture = () => api.delete('/user/profile-picture');
+export const getBookingSummary = () => api.get('/user/booking-summary');
+
+// ============ PHASE 4: CHATBOT APIs ============
+export const sendChatMessage = (data) => api.post('/chatbot/chat', data);
+export const sendGuestChatMessage = (data) => api.post('/chatbot/guest-chat', data);
 
 export default api;

@@ -38,6 +38,10 @@ import AdminCoupons from './pages/admin/AdminCoupons';  // ADD THIS
 import PaymentCheckout from './pages/PaymentCheckout';
 import PaymentConfirmation from './pages/PaymentConfirmation';
 
+import Wishlist from './pages/Wishlist';
+import Profile from './pages/Profile';
+import Chatbot from './components/Chatbot';
+
 function App() {
   return (
     <AuthProvider>
@@ -151,6 +155,18 @@ function App() {
 
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" />} />
+
+            <Route path="/wishlist" element={
+  <ProtectedRoute allowedRoles={['USER', 'ORGANIZER', 'ADMIN']}>
+    <Wishlist />
+  </ProtectedRoute>
+} />
+<Route path="/profile" element={
+  <ProtectedRoute allowedRoles={['USER', 'ORGANIZER', 'ADMIN']}>
+    <Profile />
+  </ProtectedRoute>
+} />
+
           </Routes>
         </div>
         <Footer />
@@ -169,6 +185,8 @@ function App() {
         />
         
         <QuickLogout />
+        {/* Chatbot - Module 24 */}
+<Chatbot />
       </Router>
     </AuthProvider>
   );

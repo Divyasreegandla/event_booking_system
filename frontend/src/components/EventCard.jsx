@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import WishlistButton from './WishlistButton';
 
 const EventCard = ({ event }) => {
   const navigate = useNavigate();
@@ -111,15 +112,18 @@ const EventCard = ({ event }) => {
         
         <div className="event-card-footer">
           <div className="event-card-price-modern">{formatPrice(event.price)}</div>
-          {event.event_status === 'UPCOMING' && event.available_tickets > 0 ? (
-            <button onClick={handleBookNow} className="book-now-btn">
-              Book Now →
-            </button>
-          ) : event.event_status === 'CANCELLED' ? (
-            <span style={{ color: '#ef4444', fontSize: '12px' }}>Cancelled</span>
-          ) : (
-            <span style={{ color: '#6b7280', fontSize: '12px' }}>Sold Out</span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <WishlistButton eventId={event.id} size="small" />
+            {event.event_status === 'UPCOMING' && event.available_tickets > 0 ? (
+              <button onClick={handleBookNow} className="book-now-btn">
+                Book Now →
+              </button>
+            ) : event.event_status === 'CANCELLED' ? (
+              <span style={{ color: '#ef4444', fontSize: '12px' }}>Cancelled</span>
+            ) : (
+              <span style={{ color: '#6b7280', fontSize: '12px' }}>Sold Out</span>
+            )}
+          </div>
         </div>
       </div>
     </div>

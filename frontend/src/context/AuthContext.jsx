@@ -25,14 +25,27 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await getCurrentUser();
       const userData = response.data;
+      console.log('🔍 Fetched user data:', userData);
+      console.log('🔍 Profile picture URL:', userData.profile_picture);
+      console.log('🔍 Created at:', userData.created_at);
+      
       setUser(userData);
-      const role = userData.role || localStorage.getItem('userRole') || 'USER';
-      setUserRole(role);
-      localStorage.setItem('userRole', role);
+      setUserRole(userData.role);
+      localStorage.setItem('userRole', userData.role);
+      
+      // Store profile picture in localStorage
+      if (userData.profile_picture) {
+        localStorage.setItem('userProfilePic', userData.profile_picture);
+        console.log('✅ Saved profile pic to localStorage:', userData.profile_picture);
+      } else {
+        localStorage.removeItem('userProfilePic');
+        console.log('⚠️ No profile picture in user data');
+      }
     } catch (error) {
       console.error('Failed to fetch user:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('userRole');
+      localStorage.removeItem('userProfilePic');
       setToken(null);
       setUser(null);
       setUserRole(null);
@@ -58,15 +71,22 @@ export const AuthProvider = ({ children }) => {
       const response = await loginApi(email, password);
       const { access_token, role } = response.data;
       
-      // Store token and role
       localStorage.setItem('token', access_token);
       localStorage.setItem('userRole', role);
       setToken(access_token);
       setUserRole(role);
       
-      // Fetch user data
       const userResponse = await getCurrentUser();
+      console.log('🔍 Login user data:', userResponse.data);
+      console.log('🔍 Profile picture URL:', userResponse.data.profile_picture);
+      console.log('🔍 Created at:', userResponse.data.created_at);
+      
       setUser(userResponse.data);
+      
+      if (userResponse.data.profile_picture) {
+        localStorage.setItem('userProfilePic', userResponse.data.profile_picture);
+        console.log('✅ Saved profile pic to localStorage');
+      }
       
       toast.success(`Welcome ${userResponse.data.username}! (${role})`);
       return { ...response.data, user: userResponse.data };
@@ -78,17 +98,28 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear all localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
-    
-    // Clear all state
+    localStorage.removeItem('userProfilePic');
     setToken(null);
     setUser(null);
     setUserRole(null);
-    
-    // Show success message
     toast.success('Logged out successfully');
+  };
+
+  const updateUser = (updatedUser) => {
+    console.log('🔍 Updating user in context:', updatedUser);
+    setUser(updatedUser);
+    if (updatedUser.profile_picture) {
+      localStorage.setItem('userProfilePic', updatedUser.profile_picture);
+      console.log('✅ Updated profile pic in localStorage:', updatedUser.profile_picture);
+    } else {
+      localStorage.removeItem('userProfilePic');
+    }
+    if (updatedUser.role) {
+      setUserRole(updatedUser.role);
+      localStorage.setItem('userRole', updatedUser.role);
+    }
   };
 
   const isAdmin = () => userRole === 'ADMIN';
@@ -98,6 +129,8 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ 
       user, 
+      setUser,
+      updateUser,
       userRole, 
       loading, 
       register, 

@@ -5,6 +5,7 @@ import DateRangePicker from '../components/DateRangePicker';
 import PriceRangeSlider from '../components/PriceRangeSlider';
 import SortDropdown from '../components/SortDropdown';
 import FeaturedEvents from '../components/FeaturedEvents';
+import RecommendationsSection from '../components/RecommendationsSection';
 
 const Home = () => {
   const [events, setEvents] = useState([]);
@@ -60,17 +61,14 @@ const Home = () => {
   const filterEvents = () => {
     let filtered = [...events];
     
-    // Category filter
     if (selectedCategory !== 'All') {
       filtered = filtered.filter(event => event.category === selectedCategory);
     }
     
-    // City filter
     if (selectedCity !== 'All') {
       filtered = filtered.filter(event => event.city === selectedCity);
     }
     
-    // Search term filter
     if (searchTerm) {
       filtered = filtered.filter(event =>
         event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,7 +76,6 @@ const Home = () => {
       );
     }
     
-    // Date range filter
     if (startDate) {
       filtered = filtered.filter(event => new Date(event.event_date) >= new Date(startDate));
     }
@@ -86,10 +83,8 @@ const Home = () => {
       filtered = filtered.filter(event => new Date(event.event_date) <= new Date(endDate));
     }
     
-    // Price range filter
     filtered = filtered.filter(event => event.price >= minPrice && event.price <= maxPrice);
     
-    // Sorting
     filtered.sort((a, b) => {
       if (sortBy === 'date') {
         return new Date(a.event_date) - new Date(b.event_date);
@@ -147,7 +142,12 @@ const Home = () => {
         <h1>Discover Amazing Events</h1>
         <p>Book tickets for concerts, conferences, sports, comedy, and more!</p>
       </div>
+      
+      {/* Featured Events Carousel */}
       <FeaturedEvents events={events} />
+
+      {/* Recommendations Section - Module 19 */}
+      <RecommendationsSection />
 
       {/* Search Bar */}
       <div className="search-bar">
@@ -210,7 +210,6 @@ const Home = () => {
           border: '1px solid #eef2ff'
         }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-            {/* Category Filter */}
             <div>
               <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>Category</label>
               <select
@@ -230,7 +229,6 @@ const Home = () => {
               </select>
             </div>
             
-            {/* City Filter */}
             <div>
               <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>City</label>
               <select
@@ -250,14 +248,12 @@ const Home = () => {
               </select>
             </div>
             
-            {/* Date Range */}
             <div>
               <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>Date Range</label>
               <DateRangePicker onDateChange={handleDateChange} startDate={startDate} endDate={endDate} />
             </div>
           </div>
           
-          {/* Price Range */}
           <div style={{ marginTop: '20px' }}>
             <PriceRangeSlider onPriceChange={handlePriceChange} minPrice={0} maxPrice={15000} />
           </div>
