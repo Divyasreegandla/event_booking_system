@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, events, bookings, notifications, admin, analytics, payments, coupons, reviews, search
 from app.database.session import engine, Base
@@ -8,6 +8,8 @@ import time
 from sqlalchemy.orm import Session
 from app.database.session import SessionLocal
 from app.models.event import Event, EventStatus
+from app.api import wishlist, event_updates, recommendations, chatbot, user_profile
+from app.api import websocket as websocket_router
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -77,6 +79,12 @@ app.include_router(coupons.router, prefix="/api/coupons", tags=["Coupons"])
 app.include_router(reviews.router, prefix="/api/reviews", tags=["Reviews"])
 app.include_router(search.router, prefix="/api/search", tags=["Search"])
 
+app.include_router(wishlist.router, prefix="/api/wishlist", tags=["Wishlist"])
+app.include_router(event_updates.router, prefix="/api/event-updates", tags=["Event Updates"])
+app.include_router(recommendations.router, prefix="/api/recommendations", tags=["Recommendations"])
+app.include_router(chatbot.router, prefix="/api/chatbot", tags=["Chatbot"])
+app.include_router(user_profile.router, prefix="/api/user", tags=["User Profile"])
+
 
 @app.get("/")
 def root():
@@ -97,7 +105,16 @@ def root():
         ]
     }
 
+@app.websocket("/ws")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    token: str = None,
+    event_id: int = None
+):
+    from app.api.websocket import websocket_endpoint as ws_endpoint
+    await ws_endpoint(websocket, token, event_id)
 
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+

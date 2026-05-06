@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from enum import Enum
+from datetime import datetime
 
 class UserRole(str, Enum):
     USER = "USER"
@@ -23,6 +24,8 @@ class UserResponse(BaseModel):
     username: str
     role: str
     is_admin: bool = False
+    profile_picture: Optional[str] = None
+    created_at: Optional[datetime] = None
     
     class Config:
         from_attributes = True

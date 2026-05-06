@@ -3,10 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from app.config import settings
 
-# THIS IS THE KEY LINE - Create Base here
 Base = declarative_base()
 
-# For SQLite - disable pooling to avoid connection issues
 if settings.DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         settings.DATABASE_URL,
@@ -25,7 +23,7 @@ else:
         pool_recycle=3600
     )
 
-# Use scoped_session for thread safety
+# Use scoped_session for thread safety - each request gets its own session
 SessionLocal = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
 def get_db():

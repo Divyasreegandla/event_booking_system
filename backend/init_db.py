@@ -7,13 +7,30 @@ from app.models.notification import Notification
 from app.models.payment import Payment
 from app.models.coupon import Coupon
 from app.models.review import Review
+from app.models.wishlist import Wishlist
+from app.models.user_activity import UserActivity
+from app.models.event_update import EventUpdate
 from app.utils.security import get_password_hash
+from sqlalchemy import inspect, text
 
 def init_db():
-    print("Creating database tables...")
-    Base.metadata.drop_all(bind=engine)
+    print("Checking database tables...")
+    
+    inspector = inspect(engine)
+    
+    # Create only missing tables
     Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized successfully!")
+    
+    # Add missing columns if needed
+    with engine.connect() as conn:
+        # Check and add profile_picture to users
+        columns = [col['name'] for col in inspector.get_columns('users')] if inspector.has_table('users') else []
+        if 'profile_picture' not in columns and inspector.has_table('users'):
+            conn.execute(text("ALTER TABLE users ADD COLUMN profile_picture VARCHAR NULL"))
+            conn.commit()
+            print("✅ Added profile_picture column to users")
+    
+    print("✅ Database schema ready!")
     
     db = SessionLocal()
     
@@ -63,8 +80,8 @@ def init_db():
     finally:
         db.close()
     
-    print("\n📊 Tables created:")
-    for table in Base.metadata.tables:
+    print("\n📊 Tables in database:")
+    for table in inspector.get_table_names():
         print(f"  - {table}")
 
 if __name__ == "__main__":

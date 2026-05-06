@@ -19,3 +19,5 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     role = Column(SQLEnum(UserRole), default=UserRole.USER, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    profile_picture = Column(String, nullable=True)  # Store base64 image
+    

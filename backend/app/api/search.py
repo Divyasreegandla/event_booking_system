@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 from app.database.session import get_db
-from app.models.event import Event
+from app.models.event import Event, EventStatus
 
 router = APIRouter()
 
@@ -22,7 +22,8 @@ async def advanced_search(
     limit: int = Query(100, ge=1, le=200),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Event).filter(Event.is_active == True)
+    """Advanced search with multiple filters and sorting options"""
+    query = db.query(Event).filter(Event.is_active == True, Event.event_status == EventStatus.UPCOMING)
     
     if search:
         query = query.filter(
@@ -49,7 +50,7 @@ async def advanced_search(
     if sort_by == "date":
         query = query.order_by(Event.event_date.asc())
     elif sort_by == "popularity":
-        query = query.order_by(Event.total_tickets.desc())
+        query = query.order_by((Event.total_tickets - Event.available_tickets).desc())
     elif sort_by == "price_low":
         query = query.order_by(Event.price.asc())
     elif sort_by == "price_high":
@@ -73,7 +74,8 @@ async def advanced_search(
             "available_tickets": event.available_tickets,
             "image_url": event.image_url,
             "event_status": event.event_status.value if event.event_status else "UPCOMING",
-            "organizer_name": event.organizer.username if event.organizer else None
+            "organizer_name": event.organizer.username if event.organizer else None,
+            "tickets_sold_percentage": round(((event.total_tickets - event.available_tickets) / event.total_tickets) * 100, 1) if event.total_tickets > 0 else 0
         })
     
     return {

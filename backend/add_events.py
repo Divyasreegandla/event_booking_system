@@ -6,6 +6,12 @@ from app.models.ticket import Ticket
 from app.models.notification import Notification
 from app.utils.security import get_password_hash
 from datetime import datetime, timedelta
+from app.models.payment import Payment
+from app.models.review import Review
+from app.models.wishlist import Wishlist
+from app.models.user_activity import UserActivity
+from app.models.event_update import EventUpdate
+from app.models.coupon import Coupon
 
 db = SessionLocal()
 
@@ -29,23 +35,47 @@ else:
     print(f"✅ Using existing organizer: {organizer.email}")
 
 # ============================================
-# IMPORTANT: Delete dependent records first
+# IMPORTANT: Delete dependent records in correct order
 # ============================================
 print("Clearing existing data in correct order...")
 
-# 1. Delete tickets first (they depend on bookings)
+# 1. Delete payments first (depends on bookings)
+payments_deleted = db.query(Payment).delete()
+print(f"   Deleted {payments_deleted} payments")
+
+# 2. Delete tickets (depends on bookings)
 tickets_deleted = db.query(Ticket).delete()
 print(f"   Deleted {tickets_deleted} tickets")
 
-# 2. Delete notifications (they may reference bookings/events)
+# 3. Delete reviews (depends on bookings/events)
+reviews_deleted = db.query(Review).delete()
+print(f"   Deleted {reviews_deleted} reviews")
+
+# 4. Delete wishlist items (depends on events)
+wishlist_deleted = db.query(Wishlist).delete()
+print(f"   Deleted {wishlist_deleted} wishlist items")
+
+# 5. Delete user activities (depends on events)
+activities_deleted = db.query(UserActivity).delete()
+print(f"   Deleted {activities_deleted} user activities")
+
+# 6. Delete event updates (depends on events)
+updates_deleted = db.query(EventUpdate).delete()
+print(f"   Deleted {updates_deleted} event updates")
+
+# 7. Delete notifications (may reference bookings/events)
 notifications_deleted = db.query(Notification).delete()
 print(f"   Deleted {notifications_deleted} notifications")
 
-# 3. Delete bookings (they depend on events)
+# 8. Delete bookings (depends on events)
 bookings_deleted = db.query(Booking).delete()
 print(f"   Deleted {bookings_deleted} bookings")
 
-# 4. Now delete events
+# 9. Delete coupons (independent)
+coupons_deleted = db.query(Coupon).delete()
+print(f"   Deleted {coupons_deleted} coupons")
+
+# 10. Now delete events
 events_deleted = db.query(Event).delete()
 print(f"   Deleted {events_deleted} events")
 

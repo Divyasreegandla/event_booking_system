@@ -38,5 +38,4 @@ def require_organizer(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 def require_user_or_higher(current_user: User = Depends(get_current_user)) -> User:
-    # Any authenticated user is fine
     return current_user
