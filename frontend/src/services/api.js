@@ -175,4 +175,26 @@ export const getBookingSummary = () => api.get('/user/booking-summary');
 export const sendChatMessage = (data) => api.post('/chatbot/chat', data);
 export const sendGuestChatMessage = (data) => api.post('/chatbot/guest-chat', data);
 
+// ============ PHASE 5: REWARD POINTS APIs ============
+export const getMyPoints = () => api.get('/rewards/my-points');
+export const getPointsSummary = () => api.get('/rewards/my-points/summary');
+export const getPointTransactions = () => api.get('/rewards/transactions');
+
+// ============ PHASE 5: REFERRAL APIs ============
+export const getReferralCode = () => api.get('/referrals/my-code');
+export const generateReferralCode = () => api.post('/referrals/generate');
+export const useReferralCode = (code) => api.post(`/referrals/use?code=${code}`);
+export const getMyReferrals = () => api.get('/referrals/my-referrals');
+export const getReferralStats = () => api.get('/referrals/stats');
+
+// ============ PHASE 5: TRANSLATION APIs ============
+export const getSupportedLanguages = () => api.get('/translations/supported-languages');
+export const getTranslations = (langCode) => api.get(`/translations/translations/${langCode}`);
+export const setUserLanguage = (language) => api.post('/translations/set-language', { language });
+
+export const usePointsForBooking = (bookingId, pointsToUse) => 
+  api.post('/rewards/use-points', { booking_id: bookingId, points: pointsToUse });
+
+export const getPointsValue = () => 
+  api.get('/rewards/points-value');
 export default api;

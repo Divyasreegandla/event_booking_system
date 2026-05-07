@@ -5,6 +5,8 @@ from app.models.user import User, UserRole
 from app.schemas.auth import UserCreate
 from app.utils.security import verify_password, get_password_hash, create_access_token
 from app.config import settings
+from app.services.reward_service import RewardService
+
 
 class AuthService:
     def __init__(self, db: Session):
@@ -32,6 +34,13 @@ class AuthService:
         self.db.add(db_user)
         self.db.commit()
         self.db.refresh(db_user)
+        if user_data.referral_code:
+            from app.services.referral_service import ReferralService
+            referral_service = ReferralService(self.db)
+            referral_service.process_referral_signup(user_data.referral_code, db_user.id)
+        reward_service = RewardService(self.db)
+        reward_service.award_signup_bonus(db_user.id)
+        
         return db_user
     
     def authenticate_user(self, email: str, password: str):

@@ -1,11 +1,14 @@
+// frontend/src/pages/Wishlist.jsx
 import React, { useState, useEffect } from 'react';
 import { getWishlist, removeFromWishlist } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
 import BackButton from '../components/BackButton';
 
 const Wishlist = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,15 +59,15 @@ const Wishlist = () => {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '20px' }}>
       <BackButton />
-      <h1 style={{ fontSize: '28px', marginBottom: '24px' }}>❤️ My Wishlist</h1>
+      <h1 style={{ fontSize: '28px', marginBottom: '24px' }}>❤️ {t('wishlist')}</h1>
 
       {items.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '16px' }}>
+        <div style={{ textAlign: 'center', padding: '60px', background: 'var(--card-bg, white)', borderRadius: '16px' }}>
           <span style={{ fontSize: '64px' }}>🤍</span>
-          <h2 style={{ marginTop: '16px', color: '#374151' }}>Your wishlist is empty</h2>
-          <p style={{ color: '#6b7280', marginTop: '8px' }}>
+          <h2 style={{ marginTop: '16px', color: 'var(--text-primary, #374151)' }}>Your wishlist is empty</h2>
+          <p style={{ color: 'var(--text-secondary, #6b7280)', marginTop: '8px' }}>
             Save events you like and they'll appear here!
           </p>
           <button
@@ -81,31 +84,32 @@ const Wishlist = () => {
             <div
               key={item.id}
               style={{
-                background: 'white',
-                borderRadius: '12px',
+                background: 'var(--card-bg, white)',
+                borderRadius: '16px',
                 padding: '20px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 flexWrap: 'wrap',
                 gap: '16px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                border: '1px solid var(--border-color, #eef2ff)'
               }}
             >
-              <div style={{ display: 'flex', gap: '16px', flex: 1, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '20px', flex: 1, alignItems: 'center' }}>
                 <div style={{
-                  width: '80px',
-                  height: '80px',
-                  borderRadius: '8px',
+                  width: '100px',
+                  height: '100px',
+                  borderRadius: '12px',
                   background: `url(${item.event_image_url || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=100&h=100&fit=crop'}) center/cover`,
                   backgroundSize: 'cover'
                 }} />
                 <div>
-                  <h3 style={{ fontSize: '18px', marginBottom: '4px' }}>{item.event_title}</h3>
-                  <p style={{ color: '#6b7280', fontSize: '14px' }}>
+                  <h3 style={{ fontSize: '18px', marginBottom: '6px', color: 'var(--text-primary, #1f2937)' }}>{item.event_title}</h3>
+                  <p style={{ color: 'var(--text-secondary, #6b7280)', fontSize: '14px', marginBottom: '4px' }}>
                     📅 {formatDate(item.event_date)} | 📍 {item.event_city}
                   </p>
-                  <p style={{ fontWeight: 'bold', color: '#6366f1', marginTop: '4px' }}>
+                  <p style={{ fontWeight: 'bold', color: '#6366f1', marginTop: '6px', fontSize: '18px' }}>
                     ₹{item.event_price}
                   </p>
                 </div>
@@ -114,16 +118,16 @@ const Wishlist = () => {
                 <button
                   onClick={() => handleBookNow(item.event_id)}
                   className="btn-primary"
-                  style={{ padding: '8px 20px' }}
+                  style={{ padding: '10px 24px' }}
                 >
-                  Book Now →
+                  {t('bookNow')} →
                 </button>
                 <button
                   onClick={() => handleRemove(item.event_id)}
                   className="btn-danger"
-                  style={{ padding: '8px 20px' }}
+                  style={{ padding: '10px 24px' }}
                 >
-                  Remove
+                  {t('remove') || 'Remove'}
                 </button>
               </div>
             </div>

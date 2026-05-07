@@ -1,10 +1,12 @@
 // frontend/src/pages/Tickets.jsx
 import React, { useState, useEffect } from 'react';
 import { getMyTickets } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
 import BackButton from '../components/BackButton';
 
 const Tickets = () => {
+  const { t, language } = useLanguage();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('active');
@@ -15,11 +17,15 @@ const Tickets = () => {
     return () => window.removeEventListener('bookingCancelled', fetchTickets);
   }, []);
 
+  // Re-render when language changes
+  useEffect(() => {
+    setTickets([...tickets]);
+  }, [language]);
+
   const fetchTickets = async () => {
     try {
       setLoading(true);
       const response = await getMyTickets();
-      console.log('Tickets API Response:', response.data);
       
       let ticketsData = [];
       if (response.data && response.data.tickets) {
@@ -53,7 +59,7 @@ const Tickets = () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'Date TBA';
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      return new Date(dateString).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -88,62 +94,62 @@ const Tickets = () => {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
+    <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '20px' }}>
       <BackButton />
-      <h1 style={{ fontSize: '28px', marginBottom: '24px' }}>My Tickets</h1>
+      <h1 style={{ fontSize: '28px', marginBottom: '24px' }}>{t('myTickets')}</h1>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border-color, #e5e7eb)', paddingBottom: '12px', flexWrap: 'wrap' }}>
         <button
           onClick={() => setFilter('active')}
           style={{
             padding: '8px 20px',
             background: filter === 'active' ? '#2563eb' : 'transparent',
-            color: filter === 'active' ? 'white' : '#6b7280',
+            color: filter === 'active' ? 'white' : 'var(--text-secondary, #6b7280)',
             border: 'none',
             borderRadius: '20px',
             cursor: 'pointer',
             fontWeight: '500'
           }}
         >
-          Active Tickets ({activeCount})
+          {t('activeTickets') || 'Active Tickets'} ({activeCount})
         </button>
         <button
           onClick={() => setFilter('cancelled')}
           style={{
             padding: '8px 20px',
             background: filter === 'cancelled' ? '#dc2626' : 'transparent',
-            color: filter === 'cancelled' ? 'white' : '#6b7280',
+            color: filter === 'cancelled' ? 'white' : 'var(--text-secondary, #6b7280)',
             border: 'none',
             borderRadius: '20px',
             cursor: 'pointer',
             fontWeight: '500'
           }}
         >
-          Cancelled Tickets ({cancelledCount})
+          {t('cancelledTickets') || 'Cancelled Tickets'} ({cancelledCount})
         </button>
         <button
           onClick={() => setFilter('all')}
           style={{
             padding: '8px 20px',
             background: filter === 'all' ? '#6b7280' : 'transparent',
-            color: filter === 'all' ? 'white' : '#6b7280',
+            color: filter === 'all' ? 'white' : 'var(--text-secondary, #6b7280)',
             border: 'none',
             borderRadius: '20px',
             cursor: 'pointer',
             fontWeight: '500'
           }}
         >
-          All Tickets ({tickets.length})
+          {t('allTickets') || 'All Tickets'} ({tickets.length})
         </button>
       </div>
 
       {filteredTickets.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '12px' }}>
+        <div style={{ textAlign: 'center', padding: '60px', background: 'var(--card-bg, white)', borderRadius: '16px' }}>
           <span style={{ fontSize: '48px' }}>🎟️</span>
           <p style={{ marginTop: '16px' }}>
-            {filter === 'active' && 'No active tickets.'}
-            {filter === 'cancelled' && 'No cancelled tickets.'}
-            {filter === 'all' && 'No tickets yet.'}
+            {filter === 'active' && (t('noActiveTickets') || 'No active tickets.')}
+            {filter === 'cancelled' && (t('noCancelledTickets') || 'No cancelled tickets.')}
+            {filter === 'all' && (t('noTickets') || 'No tickets yet.')}
           </p>
         </div>
       ) : (
@@ -152,13 +158,13 @@ const Tickets = () => {
             <div 
               key={ticket.id} 
               style={{ 
-                background: ticket.is_cancelled ? '#fef2f2' : 'white', 
-                borderRadius: '12px', 
+                background: ticket.is_cancelled ? '#fef2f2' : 'var(--card-bg, white)', 
+                borderRadius: '16px', 
                 padding: '20px', 
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
                 opacity: ticket.is_cancelled ? 0.8 : 1,
                 position: 'relative',
-                border: ticket.is_cancelled ? '1px solid #fecaca' : 'none'
+                border: ticket.is_cancelled ? '1px solid #fecaca' : '1px solid var(--border-color, #eef2ff)'
               }}
             >
               {ticket.is_cancelled && (
@@ -173,7 +179,7 @@ const Tickets = () => {
                   fontSize: '12px',
                   fontWeight: 'bold'
                 }}>
-                  CANCELLED
+                  {t('cancelled')}
                 </div>
               )}
               
@@ -186,22 +192,22 @@ const Tickets = () => {
                 textAlign: 'center', 
                 marginBottom: '12px',
                 textDecoration: ticket.is_cancelled ? 'line-through' : 'none',
-                color: ticket.is_cancelled ? '#6b7280' : '#1f2937'
+                color: ticket.is_cancelled ? '#6b7280' : 'var(--text-primary, #1f2937)'
               }}>
                 {ticket.event_title || 'Event Ticket'}
               </h3>
               
-              <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', marginBottom: '4px' }}>
+              <p style={{ color: 'var(--text-secondary, #6b7280)', fontSize: '14px', textAlign: 'center', marginBottom: '4px' }}>
                 {ticket.venue || 'Venue TBA'}
               </p>
-              <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center', marginBottom: '12px' }}>
+              <p style={{ color: 'var(--text-secondary, #6b7280)', fontSize: '14px', textAlign: 'center', marginBottom: '12px' }}>
                 {formatDate(ticket.event_date)}
               </p>
-              <p style={{ color: '#6b7280', fontSize: '12px', textAlign: 'center', marginBottom: '4px' }}>
-                Booking: {ticket.booking_reference}
+              <p style={{ color: 'var(--text-secondary, #6b7280)', fontSize: '12px', textAlign: 'center', marginBottom: '4px' }}>
+                {t('bookingReference') || 'Booking'}: {ticket.booking_reference}
               </p>
-              <p style={{ color: '#6b7280', fontSize: '12px', textAlign: 'center', marginBottom: '12px', wordBreak: 'break-all' }}>
-                Ticket: {ticket.ticket_code}
+              <p style={{ color: 'var(--text-secondary, #6b7280)', fontSize: '12px', textAlign: 'center', marginBottom: '12px', wordBreak: 'break-all' }}>
+                {t('ticketCode') || 'Ticket'}: {ticket.ticket_code}
               </p>
               
               {!ticket.is_cancelled && (
@@ -230,7 +236,7 @@ const Tickets = () => {
                     )}
                   </div>
                   <button onClick={() => downloadTicket(ticket)} className="btn-primary" style={{ width: '100%' }}>
-                    Download Ticket
+                    {t('downloadTicket') || 'Download Ticket'}
                   </button>
                 </>
               )}
@@ -245,7 +251,7 @@ const Tickets = () => {
                   color: '#991b1b',
                   fontSize: '14px'
                 }}>
-                  This ticket has been cancelled and is no longer valid.
+                  {t('ticketCancelled') || 'This ticket has been cancelled and is no longer valid.'}
                 </div>
               )}
             </div>

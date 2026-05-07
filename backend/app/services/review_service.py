@@ -6,6 +6,7 @@ from app.models.review import Review
 from app.models.booking import Booking, BookingStatus
 from app.models.event import Event
 from app.schemas.review import ReviewCreate, ReviewUpdate
+from app.services.reward_service import RewardService
 
 
 class ReviewService:
@@ -39,7 +40,9 @@ class ReviewService:
             Review.user_id == user_id,
             Review.event_id == event_id
         ).first()
-        
+        reward_service = RewardService(self.db)
+        reward_service.award_review_points(review.id, user_id)
+
         if existing_review:
             raise HTTPException(status_code=400, detail="You have already reviewed this event")
         

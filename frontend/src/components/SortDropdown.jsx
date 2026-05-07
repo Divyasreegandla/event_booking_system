@@ -1,14 +1,17 @@
+// frontend/src/components/SortDropdown.jsx
 import React, { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 const SortDropdown = ({ onSortChange, currentSort = 'date' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState(currentSort);
+  const { t } = useLanguage();
 
   const sortOptions = [
-    { value: 'date', label: '📅 Date (Earliest)', icon: '📅' },
-    { value: 'price_low', label: '💰 Price (Low to High)', icon: '💰' },
-    { value: 'price_high', label: '💰 Price (High to Low)', icon: '💸' },
-    { value: 'popularity', label: '🔥 Popularity', icon: '🔥' }
+    { value: 'date', label: t('sortDate'), icon: '📅' },
+    { value: 'price_low', label: t('sortPriceLow'), icon: '💰' },
+    { value: 'price_high', label: t('sortPriceHigh'), icon: '💸' },
+    { value: 'popularity', label: t('sortPopularity'), icon: '🔥' }
   ];
 
   const handleSelect = (value) => {
@@ -21,7 +24,7 @@ const SortDropdown = ({ onSortChange, currentSort = 'date' }) => {
 
   const getCurrentLabel = () => {
     const option = sortOptions.find(opt => opt.value === selectedSort);
-    return option ? option.label : 'Sort by';
+    return option ? option.label : t('sortBy');
   };
 
   return (

@@ -15,6 +15,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from app.config import settings
+from app.services.reward_service import RewardService
+
 
 class BookingService:
     def __init__(self, db: Session):
@@ -504,6 +506,21 @@ class BookingService:
         # Update booking status
         booking.status = "confirmed"
         
+        reward_service = RewardService(self.db)
+        reward_service.award_booking_points(booking.id, booking.user_id)
+
+        # Check if this is user's first booking (for referral completion)
+        from app.models.referral import Referral
+        referral = self.db.query(Referral).filter(
+            Referral.referred_user_id == booking.user_id,
+            Referral.status == "pending"
+        ).first()
+        if referral:
+            referral.status = "completed"
+            referral.completed_at = datetime.now()
+            # Award points to referrer
+            reward_service.award_referral_points(referral.referrer_id, booking.user_id)
+
         # Get event for tickets
         event = self.db.query(Event).filter(Event.id == booking.event_id).first()
         

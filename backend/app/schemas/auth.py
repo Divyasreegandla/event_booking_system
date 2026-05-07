@@ -13,6 +13,8 @@ class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6)
     role: UserRole = UserRole.USER
+    referral_code: Optional[str] = Field(None, description="Referral code if invited") 
+    
 
 class UserLogin(BaseModel):
     email: EmailStr

@@ -1,8 +1,11 @@
+// frontend/src/components/BackButton.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 const BackButton = ({ fallbackPath = '/' }) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const goBack = () => {
     if (window.history.length > 1) {
@@ -14,7 +17,7 @@ const BackButton = ({ fallbackPath = '/' }) => {
 
   return (
     <button onClick={goBack} className="back-button">
-      ← Back
+      ← {t('back')}
     </button>
   );
 };

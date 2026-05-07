@@ -1,15 +1,23 @@
+// frontend/src/pages/Notifications.jsx
 import React, { useState, useEffect } from 'react';
 import { getNotifications, markAsRead, markAllRead, deleteNotification } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 import BackButton from '../components/BackButton';
 import toast from 'react-hot-toast';
 
 const Notifications = () => {
+  const { t, language } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchNotifications();
   }, []);
+
+  // Re-render when language changes
+  useEffect(() => {
+    setNotifications([...notifications]);
+  }, [language]);
 
   const fetchNotifications = async () => {
     try {
@@ -25,43 +33,43 @@ const Notifications = () => {
   const handleMarkAsRead = async (id) => {
     try {
       await markAsRead(id);
-      toast.success('Marked as read');
+      toast.success(t('markedAsRead') || 'Marked as read');
       fetchNotifications();
     } catch (error) {
-      toast.error('Failed to mark as read');
+      toast.error(t('somethingWrong') || 'Failed to mark as read');
     }
   };
 
   const handleMarkAllRead = async () => {
     try {
       await markAllRead();
-      toast.success('All notifications marked as read');
+      toast.success(t('allMarkedRead') || 'All notifications marked as read');
       fetchNotifications();
     } catch (error) {
-      toast.error('Failed to mark all as read');
+      toast.error(t('somethingWrong') || 'Failed to mark all as read');
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this notification?')) {
+    if (window.confirm(t('confirmDelete') || 'Are you sure you want to delete this notification?')) {
       try {
         await deleteNotification(id);
-        toast.success('Notification deleted');
+        toast.success(t('notificationDeleted') || 'Notification deleted');
         fetchNotifications();
       } catch (error) {
-        toast.error('Failed to delete notification');
+        toast.error(t('somethingWrong') || 'Failed to delete notification');
       }
     }
   };
 
   const handleDeleteAll = async () => {
-    if (window.confirm('Are you sure you want to delete ALL notifications? This cannot be undone.')) {
+    if (window.confirm(t('confirmDeleteAll') || 'Are you sure you want to delete ALL notifications? This cannot be undone.')) {
       try {
         await Promise.all(notifications.map(n => deleteNotification(n.id)));
-        toast.success('All notifications deleted');
+        toast.success(t('allDeleted') || 'All notifications deleted');
         fetchNotifications();
       } catch (error) {
-        toast.error('Failed to delete notifications');
+        toast.error(t('somethingWrong') || 'Failed to delete notifications');
       }
     }
   };
@@ -85,6 +93,15 @@ const Notifications = () => {
     }
   };
 
+  const getTypeText = (type) => {
+    switch (type) {
+      case 'BOOKING': return t('booking') || 'BOOKING';
+      case 'PAYMENT': return t('payment') || 'PAYMENT';
+      case 'EVENT': return t('event') || 'EVENT';
+      default: return t('system') || 'SYSTEM';
+    }
+  };
+
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -92,10 +109,10 @@ const Notifications = () => {
     const diffHours = Math.floor((now - date) / 3600000);
     const diffDays = Math.floor((now - date) / 86400000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    return `${diffDays} days ago`;
+    if (diffMins < 1) return t('justNow') || 'Just now';
+    if (diffMins < 60) return `${diffMins} ${t('minutesAgo') || 'min ago'}`;
+    if (diffHours < 24) return `${diffHours} ${t('hoursAgo') || 'hours ago'}`;
+    return `${diffDays} ${t('daysAgo') || 'days ago'}`;
   };
 
   if (loading) {
@@ -109,7 +126,7 @@ const Notifications = () => {
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px' }}>
+    <div style={{ maxWidth: '900px', margin: '40px auto', padding: '20px' }}>
       <BackButton />
       
       <div style={{ 
@@ -121,33 +138,33 @@ const Notifications = () => {
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: '28px' }}>Notifications</h1>
+          <h1 style={{ fontSize: '28px', margin: 0 }}>{t('notifications') || 'Notifications'}</h1>
           {unreadCount > 0 && (
             <p style={{ color: '#6366f1', fontSize: '14px', marginTop: '4px' }}>
-              {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
+              {unreadCount} {t('unreadNotifications') || 'unread notification'}{unreadCount !== 1 ? 's' : ''}
             </p>
           )}
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           {notifications.some(n => !n.is_read) && (
             <button onClick={handleMarkAllRead} className="btn-secondary" style={{ padding: '8px 16px' }}>
-              Mark All Read
+              {t('markAllRead') || 'Mark All Read'}
             </button>
           )}
           {notifications.length > 0 && (
             <button onClick={handleDeleteAll} className="btn-danger" style={{ padding: '8px 16px' }}>
-              Delete All
+              {t('deleteAll') || 'Delete All'}
             </button>
           )}
         </div>
       </div>
       
       {notifications.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px', background: 'white', borderRadius: '16px' }}>
+        <div style={{ textAlign: 'center', padding: '60px', background: 'var(--card-bg, white)', borderRadius: '16px' }}>
           <span style={{ fontSize: '64px' }}>🔔</span>
-          <p style={{ marginTop: '16px', color: '#6b7280' }}>No notifications yet.</p>
-          <p style={{ fontSize: '14px', color: '#9ca3af', marginTop: '8px' }}>
-            When you book events or receive updates, they'll appear here.
+          <p style={{ marginTop: '16px', color: 'var(--text-secondary, #6b7280)' }}>{t('noNotifications') || 'No notifications yet.'}</p>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary, #9ca3af)', marginTop: '8px' }}>
+            {t('notificationsInfo') || 'When you book events or receive updates, they\'ll appear here.'}
           </p>
         </div>
       ) : (
@@ -156,7 +173,7 @@ const Notifications = () => {
             <div
               key={notif.id}
               style={{
-                background: notif.is_read ? 'white' : 'linear-gradient(135deg, #eef2ff, white)',
+                background: notif.is_read ? 'var(--card-bg, white)' : 'linear-gradient(135deg, #eef2ff, var(--card-bg, white))',
                 borderRadius: '16px',
                 padding: '20px',
                 borderLeft: `4px solid ${getTypeColor(notif.type)}`,
@@ -169,7 +186,7 @@ const Notifications = () => {
                 <div style={{ fontSize: '28px' }}>{getIcon(notif.type)}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                    <strong style={{ fontSize: '16px' }}>{notif.title}</strong>
+                    <strong style={{ fontSize: '16px', color: 'var(--text-primary, #1f2937)' }}>{notif.title}</strong>
                     <span style={{
                       fontSize: '10px',
                       padding: '2px 8px',
@@ -177,7 +194,7 @@ const Notifications = () => {
                       background: getTypeColor(notif.type),
                       color: 'white'
                     }}>
-                      {notif.type}
+                      {getTypeText(notif.type)}
                     </span>
                     {!notif.is_read && (
                       <span style={{
@@ -187,11 +204,11 @@ const Notifications = () => {
                         background: '#6366f1',
                         color: 'white'
                       }}>
-                        NEW
+                        {t('new') || 'NEW'}
                       </span>
                     )}
                   </div>
-                  <p style={{ color: '#4b5563', fontSize: '14px', lineHeight: '1.5', marginBottom: '8px' }}>
+                  <p style={{ color: 'var(--text-secondary, #4b5563)', fontSize: '14px', lineHeight: '1.5', marginBottom: '8px' }}>
                     {notif.message}
                   </p>
                   <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '8px' }}>
@@ -200,7 +217,7 @@ const Notifications = () => {
                     </span>
                     {notif.booking_reference && (
                       <span style={{ fontSize: '11px', color: '#6366f1', fontFamily: 'monospace' }}>
-                        Ref: {notif.booking_reference}
+                        {t('ref') || 'Ref'}: {notif.booking_reference}
                       </span>
                     )}
                   </div>
@@ -219,7 +236,7 @@ const Notifications = () => {
                         fontSize: '12px'
                       }}
                     >
-                      Mark Read
+                      {t('markRead') || 'Mark Read'}
                     </button>
                   )}
                   <button
@@ -234,7 +251,7 @@ const Notifications = () => {
                       fontSize: '12px'
                     }}
                   >
-                    Delete
+                    {t('delete') || 'Delete'}
                   </button>
                 </div>
               </div>

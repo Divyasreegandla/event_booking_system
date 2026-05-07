@@ -10,6 +10,7 @@ from app.database.session import SessionLocal
 from app.models.event import Event, EventStatus
 from app.api import wishlist, event_updates, recommendations, chatbot, user_profile
 from app.api import websocket as websocket_router
+from app.api import rewards, referrals, translations
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -84,6 +85,10 @@ app.include_router(event_updates.router, prefix="/api/event-updates", tags=["Eve
 app.include_router(recommendations.router, prefix="/api/recommendations", tags=["Recommendations"])
 app.include_router(chatbot.router, prefix="/api/chatbot", tags=["Chatbot"])
 app.include_router(user_profile.router, prefix="/api/user", tags=["User Profile"])
+
+app.include_router(rewards.router, prefix="/api/rewards", tags=["Rewards"])
+app.include_router(referrals.router, prefix="/api/referrals", tags=["Referrals"])
+app.include_router(translations.router, prefix="/api/translations", tags=["Translations"])
 
 
 @app.get("/")

@@ -1,9 +1,13 @@
+// frontend/src/components/EventCard.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import WishlistButton from './WishlistButton';
+import ShareButton from './ShareButton';
+import { useLanguage } from '../context/LanguageContext';
 
 const EventCard = ({ event }) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const getCategoryIcon = () => {
     switch (event.category) {
@@ -48,10 +52,10 @@ const EventCard = ({ event }) => {
 
   const getEventStatusBadge = () => {
     const status = event.event_status;
-    if (status === 'UPCOMING') return { text: 'UPCOMING', color: '#10b981' };
-    if (status === 'ONGOING') return { text: 'LIVE', color: '#f59e0b' };
-    if (status === 'COMPLETED') return { text: 'COMPLETED', color: '#6b7280' };
-    if (status === 'CANCELLED') return { text: 'CANCELLED', color: '#ef4444' };
+    if (status === 'UPCOMING') return { text: t('upcoming'), color: '#10b981' };
+    if (status === 'ONGOING') return { text: t('ongoing'), color: '#f59e0b' };
+    if (status === 'COMPLETED') return { text: t('completed'), color: '#6b7280' };
+    if (status === 'CANCELLED') return { text: t('cancelled'), color: '#ef4444' };
     return null;
   };
 
@@ -61,12 +65,16 @@ const EventCard = ({ event }) => {
     navigate(`/events/${event.id}`);
   };
 
+  const handleCardClick = () => {
+    navigate(`/events/${event.id}`);
+  };
+
   const statusBadge = getEventStatusBadge();
   const defaultImage = "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=400&h=250&fit=crop";
   const eventImage = event.image_url || defaultImage;
 
   return (
-    <div className="event-card-modern">
+    <div className="event-card-modern" onClick={handleCardClick}>
       <div 
         className="event-card-image-modern" 
         style={{ 
@@ -114,14 +122,23 @@ const EventCard = ({ event }) => {
           <div className="event-card-price-modern">{formatPrice(event.price)}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <WishlistButton eventId={event.id} size="small" />
+            <ShareButton 
+              eventId={event.id} 
+              eventTitle={event.title} 
+              eventImage={event.image_url}
+              size="small"
+              onShareOpen={(e) => {
+                e.stopPropagation();
+              }}
+            />
             {event.event_status === 'UPCOMING' && event.available_tickets > 0 ? (
               <button onClick={handleBookNow} className="book-now-btn">
-                Book Now →
+                {t('bookNow')} →
               </button>
             ) : event.event_status === 'CANCELLED' ? (
-              <span style={{ color: '#ef4444', fontSize: '12px' }}>Cancelled</span>
+              <span style={{ color: '#ef4444', fontSize: '12px' }}>{t('cancelled')}</span>
             ) : (
-              <span style={{ color: '#6b7280', fontSize: '12px' }}>Sold Out</span>
+              <span style={{ color: '#6b7280', fontSize: '12px' }}>{t('soldOut')}</span>
             )}
           </div>
         </div>

@@ -1,10 +1,13 @@
+// frontend/src/components/RecommendationsSection.jsx
 import React, { useState, useEffect } from 'react';
 import { getPersonalizedRecommendations, getTrendingEvents } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import EventCard from './EventCard';
 
 const RecommendationsSection = () => {
   const { user } = useAuth();
+  const { t, language } = useLanguage(); // Add language to trigger re-render
   const [personalized, setPersonalized] = useState([]);
   const [trending, setTrending] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,6 +16,11 @@ const RecommendationsSection = () => {
   useEffect(() => {
     fetchRecommendations();
   }, [user]);
+
+  // Re-fetch when language changes (to update any translated content)
+  useEffect(() => {
+    fetchRecommendations();
+  }, [language]);
 
   const fetchRecommendations = async () => {
     setLoading(true);
@@ -57,7 +65,7 @@ const RecommendationsSection = () => {
               borderBottom: activeTab === 'personalized' ? '2px solid #6366f1' : 'none'
             }}
           >
-            ⭐ Recommended for You
+            ⭐ {t('recommendedForYou')}
           </button>
         )}
         <button
@@ -72,7 +80,7 @@ const RecommendationsSection = () => {
             borderBottom: activeTab === 'trending' ? '2px solid #6366f1' : 'none'
           }}
         >
-          🔥 Trending Events
+          🔥 {t('trendingEvents')}
         </button>
       </div>
 

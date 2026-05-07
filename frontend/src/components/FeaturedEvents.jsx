@@ -1,9 +1,12 @@
+// frontend/src/components/FeaturedEvents.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Slider from 'react-slick';
+import { useLanguage } from '../context/LanguageContext';
 
 const FeaturedEvents = ({ events }) => {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
 
   const settings = {
     dots: true,
@@ -21,12 +24,12 @@ const FeaturedEvents = ({ events }) => {
 
   if (!events || events.length === 0) return null;
 
-  const featured = events.slice(0, 6); // First 6 events as featured
+  const featured = events.slice(0, 6);
 
   return (
     <div style={{ margin: '3rem 0' }}>
       <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-        🔥 Featured Events
+        {t('featuredEvents')}
       </h2>
       <Slider {...settings}>
         {featured.map(event => (

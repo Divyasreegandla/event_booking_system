@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+// frontend/src/pages/Booking.jsx
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { createBooking, validateCoupon } from '../services/api';
+import { createBooking, validateCoupon, getMyPoints } from '../services/api';
 import toast from 'react-hot-toast';
 import BackButton from '../components/BackButton';
 
@@ -13,6 +14,32 @@ const Booking = () => {
   const [couponApplied, setCouponApplied] = useState(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [couponMessage, setCouponMessage] = useState('');
+  
+  // Points related states
+  const [userPoints, setUserPoints] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState(0);
+  const [pointsDiscount, setPointsDiscount] = useState(0);
+  const [loadingPoints, setLoadingPoints] = useState(false);
+  const [pointsMessage, setPointsMessage] = useState('');
+
+  useEffect(() => {
+    fetchUserPoints();
+  }, []);
+
+  const fetchUserPoints = async () => {
+    setLoadingPoints(true);
+    try {
+      const response = await getMyPoints();
+      if (response.data) {
+        setUserPoints(response.data.total_points || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch points:', error);
+    } finally {
+      setLoadingPoints(false);
+    }
+  };
 
   if (!event) {
     navigate('/');
@@ -20,8 +47,58 @@ const Booking = () => {
   }
 
   const originalAmount = event.price * initialQuantity;
-  const discountedAmount = couponApplied ? couponApplied.final_amount : originalAmount;
-  const discountAmount = couponApplied ? couponApplied.discount_amount : 0;
+  
+  // Calculate point value (100 points = ₹1)
+  const POINT_VALUE = 0.01;
+  const maxPointsToUse = Math.min(userPoints, Math.floor(originalAmount / POINT_VALUE));
+  
+  const handlePointsToggle = () => {
+    if (!usePoints) {
+      // Enable points usage - use maximum available points
+      setUsePoints(true);
+      setPointsToUse(maxPointsToUse);
+      const discount = maxPointsToUse * POINT_VALUE;
+      setPointsDiscount(discount);
+      setPointsMessage(`✅ Using ${maxPointsToUse} points saves ₹${discount.toFixed(2)}`);
+      toast.success(`Using ${maxPointsToUse} points!`);
+    } else {
+      // Disable points usage
+      setUsePoints(false);
+      setPointsToUse(0);
+      setPointsDiscount(0);
+      setPointsMessage('');
+    }
+  };
+
+  const handlePointsChange = (e) => {
+    let value = parseInt(e.target.value) || 0;
+    value = Math.min(maxPointsToUse, Math.max(0, value));
+    setPointsToUse(value);
+    const discount = value * POINT_VALUE;
+    setPointsDiscount(discount);
+  };
+
+  const discountedAmount = () => {
+    let amount = originalAmount;
+    if (couponApplied) {
+      amount = couponApplied.final_amount;
+    }
+    if (usePoints) {
+      amount = Math.max(0, amount - pointsDiscount);
+    }
+    return amount;
+  };
+
+  const totalDiscount = () => {
+    let discount = 0;
+    if (couponApplied) {
+      discount += couponApplied.discount_amount;
+    }
+    if (usePoints) {
+      discount += pointsDiscount;
+    }
+    return discount;
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -76,13 +153,19 @@ const Booking = () => {
     try {
       const bookingData = {
         event_id: event.id,
-        quantity: initialQuantity
+        quantity: initialQuantity,
+        use_points: usePoints,
+        points_to_use: pointsToUse
       };
       
       const response = await createBooking(bookingData);
       const booking = response.data;
       
-      toast.success('Booking created! Redirecting to payment...');
+      const successMessage = usePoints 
+        ? `Booking created! Used ${pointsToUse} points and saved ₹${pointsDiscount.toFixed(2)}! Redirecting to payment...`
+        : 'Booking created! Redirecting to payment...';
+      
+      toast.success(successMessage);
       
       navigate('/payment-checkout', { 
         state: { 
@@ -90,7 +173,9 @@ const Booking = () => {
           event,
           couponApplied,
           originalAmount,
-          discountedAmount
+          discountedAmount: discountedAmount(),
+          pointsUsed: usePoints ? pointsToUse : 0,
+          pointsSaved: pointsDiscount
         } 
       });
     } catch (error) {
@@ -125,7 +210,86 @@ const Booking = () => {
         <div className="booking-summary-card">
           <h2>Order Summary</h2>
           
-          {/* Coupon Section - VISIBLE AND WORKING */}
+          {/* Points Section - NEW */}
+          {userPoints > 0 && (
+            <div style={{ 
+              margin: '16px 0', 
+              padding: '16px', 
+              background: 'linear-gradient(135deg, #fef3c7, #fffbeb)', 
+              borderRadius: '12px',
+              border: '1px solid #fde68a'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div>
+                  <span style={{ fontSize: '20px' }}>⭐</span>
+                  <strong style={{ marginLeft: '8px' }}>Your Points</strong>
+                </div>
+                <span style={{ 
+                  background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+                  color: 'white',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  fontWeight: 'bold'
+                }}>
+                  {userPoints} points
+                </span>
+              </div>
+              
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={usePoints}
+                    onChange={handlePointsToggle}
+                    disabled={maxPointsToUse === 0}
+                  />
+                  <span>Use points to save money</span>
+                </label>
+                
+                {usePoints && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px' }}>Points to use:</span>
+                    <input
+                      type="number"
+                      value={pointsToUse}
+                      onChange={handlePointsChange}
+                      min="0"
+                      max={maxPointsToUse}
+                      step="100"
+                      style={{
+                        width: '100px',
+                        padding: '6px 10px',
+                        border: '1px solid #fde68a',
+                        borderRadius: '8px',
+                        background: 'white'
+                      }}
+                    />
+                    <span style={{ fontSize: '12px', color: '#10b981' }}>
+                      saves ₹{pointsDiscount.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {pointsMessage && (
+                <p style={{ fontSize: '12px', marginTop: '8px', color: '#10b981' }}>
+                  {pointsMessage}
+                </p>
+              )}
+              
+              <p style={{ fontSize: '11px', color: '#92400e', marginTop: '8px' }}>
+                💡 100 points = ₹1 | Max {maxPointsToUse} points can be used
+              </p>
+            </div>
+          )}
+          
+          {/* Coupon Section */}
           <div style={{ 
             margin: '16px 0', 
             padding: '16px', 
@@ -220,24 +384,45 @@ const Booking = () => {
             </div>
             {couponApplied && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '4px', color: '#10b981' }}>
-                <span>Discount ({couponCode}):</span>
-                <span>- ₹{discountAmount}</span>
+                <span>Coupon Discount ({couponCode}):</span>
+                <span>- ₹{couponApplied.discount_amount}</span>
+              </div>
+            )}
+            {usePoints && pointsDiscount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '4px', color: '#f59e0b' }}>
+                <span>Points Discount ({pointsToUse} pts):</span>
+                <span>- ₹{pointsDiscount.toFixed(2)}</span>
               </div>
             )}
             <div style={{ borderTop: '1px dashed #cbd5e1', marginTop: '8px', paddingTop: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                 <span>Total Amount:</span>
-                <span style={{ fontSize: '18px', color: '#6366f1' }}>₹{discountedAmount.toFixed(2)}</span>
+                <span style={{ fontSize: '18px', color: '#6366f1' }}>₹{discountedAmount().toFixed(2)}</span>
               </div>
             </div>
           </div>
+          
+          {/* Savings Summary */}
+          {totalDiscount() > 0 && (
+            <div style={{
+              marginTop: '12px',
+              padding: '10px',
+              background: '#d1fae5',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <span style={{ fontSize: '12px', color: '#065f46' }}>
+                🎉 You saved ₹{totalDiscount().toFixed(2)} on this booking!
+              </span>
+            </div>
+          )}
           
           <button
             onClick={handleConfirmBooking}
             disabled={loading}
             className="confirm-booking-btn"
           >
-            {loading ? 'Processing...' : 'Proceed to Payment →'}
+            {loading ? 'Processing...' : `Proceed to Payment → ₹${discountedAmount().toFixed(2)}`}
           </button>
           
           <p className="booking-note">

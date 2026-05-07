@@ -1,3 +1,4 @@
+// frontend/src/pages/Home.jsx
 import React, { useState, useEffect } from 'react';
 import { getEvents, advancedSearch, getCities, getAllCategories } from '../services/api';
 import EventCard from '../components/EventCard';
@@ -6,8 +7,10 @@ import PriceRangeSlider from '../components/PriceRangeSlider';
 import SortDropdown from '../components/SortDropdown';
 import FeaturedEvents from '../components/FeaturedEvents';
 import RecommendationsSection from '../components/RecommendationsSection';
+import { useLanguage } from '../context/LanguageContext';
 
 const Home = () => {
+  const { t, language } = useLanguage(); // Add language to trigger re-render
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +33,7 @@ const Home = () => {
 
   useEffect(() => {
     filterEvents();
-  }, [events, selectedCategory, selectedCity, searchTerm, sortBy, startDate, endDate, minPrice, maxPrice]);
+  }, [events, selectedCategory, selectedCity, searchTerm, sortBy, startDate, endDate, minPrice, maxPrice, language]); // Add language to dependencies
 
   const fetchEvents = async () => {
     try {
@@ -139,28 +142,23 @@ const Home = () => {
   return (
     <div>
       <div className="hero">
-        <h1>Discover Amazing Events</h1>
-        <p>Book tickets for concerts, conferences, sports, comedy, and more!</p>
+        <h1>{t('discoverEvents')}</h1>
+        <p>{t('discoverSubtitle')}</p>
       </div>
       
-      {/* Featured Events Carousel */}
       <FeaturedEvents events={events} />
-
-      {/* Recommendations Section - Module 19 */}
       <RecommendationsSection />
 
-      {/* Search Bar */}
       <div className="search-bar">
         <input
           type="text"
-          placeholder="Search events by title or description..."
+          placeholder={t('searchEvents')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
         />
       </div>
 
-      {/* Advanced Filters Toggle */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -176,7 +174,7 @@ const Home = () => {
             gap: '8px'
           }}
         >
-          <span>🔧</span> {showFilters ? 'Hide Filters' : 'Show Filters'}
+          <span>🔧</span> {showFilters ? t('hideFilters') : t('showFilters')}
         </button>
         
         <SortDropdown onSortChange={handleSortChange} currentSort={sortBy} />
@@ -194,12 +192,11 @@ const Home = () => {
               fontSize: '12px'
             }}
           >
-            Clear All Filters
+            {t('clearFilters')}
           </button>
         )}
       </div>
 
-      {/* Advanced Filters Panel */}
       {showFilters && (
         <div style={{
           background: 'white',
@@ -211,7 +208,7 @@ const Home = () => {
         }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
             <div>
-              <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>Category</label>
+              <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>{t('filterByCategory')}</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -224,13 +221,13 @@ const Home = () => {
                 }}
               >
                 {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>{cat === 'All' ? t('allEvents') || 'All Events' : cat}</option>
                 ))}
               </select>
             </div>
             
             <div>
-              <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>City</label>
+              <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>{t('filterByCity')}</label>
               <select
                 value={selectedCity}
                 onChange={(e) => setSelectedCity(e.target.value)}
@@ -243,13 +240,13 @@ const Home = () => {
                 }}
               >
                 {cities.map(city => (
-                  <option key={city} value={city}>{city}</option>
+                  <option key={city} value={city}>{city === 'All' ? t('allCities') || 'All Cities' : city}</option>
                 ))}
               </select>
             </div>
             
             <div>
-              <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>Date Range</label>
+              <label style={{ fontWeight: '600', fontSize: '13px', display: 'block', marginBottom: '8px' }}>{t('filterByDate')}</label>
               <DateRangePicker onDateChange={handleDateChange} startDate={startDate} endDate={endDate} />
             </div>
           </div>
@@ -260,7 +257,6 @@ const Home = () => {
         </div>
       )}
 
-      {/* Category Quick Filters */}
       <div className="category-filters">
         {categories.slice(0, 6).map(cat => (
           <button
@@ -268,23 +264,21 @@ const Home = () => {
             onClick={() => setSelectedCategory(cat)}
             className={`category-btn ${selectedCategory === cat ? 'active' : ''}`}
           >
-            {cat === 'All' ? 'All Events' : cat}
+            {cat === 'All' ? (t('allEvents') || 'All Events') : cat}
           </button>
         ))}
       </div>
 
-      {/* Results Count */}
       <div className="results-count">
-        Found {filteredEvents.length} amazing events for you
+        {t('foundEvents', { count: filteredEvents.length })}
       </div>
 
-      {/* No Results */}
       {filteredEvents.length === 0 ? (
         <div className="no-results">
           <span>🎟️</span>
-          <p>No events found. Try adjusting your filters.</p>
+          <p>{t('noEvents')}</p>
           <button onClick={clearAllFilters} className="btn-primary" style={{ marginTop: '16px' }}>
-            Clear All Filters
+            {t('clearFilters')}
           </button>
         </div>
       ) : (
